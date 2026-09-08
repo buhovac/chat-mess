@@ -1,0 +1,72 @@
+name: chat-mess
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-app}
+      POSTGRES_DB: ${POSTGRES_DB:-app}
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-app}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Web UI to poke at the database without installing a Postgres client locally.
+  # http://localhost:8080  (system: PostgreSQL, server: db, user/pass/db: see .env)
+  adminer:
+    image: adminer:latest
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+
+  api:
+    build:
+      context: ./server
+      dockerfile: Dockerfile.dev
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Overrides the localhost value from .env: inside the Compose network the
+      # database is reachable by its service name "db".
+      DATABASE_URL: postgresql://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-app}@db:5432/${POSTGRES_DB:-app}
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./server:/app                        # bind mount: host edits are seen instantly
+      - api-node-modules:/app/node_modules   # but node_modules stays INSIDE the container
+    depends_on:
+      db:
+        condition: service_healthy
+    # generate = build the Prisma client for the current schema
+    # migrate deploy = apply any migration not yet applied to the local db
+    # so a teammate who just pulled has the right schema without doing anything.
+    command: sh -c "npx prisma generate && npx prisma migrate deploy && npm run dev"
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile.dev
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./client:/app
+      - client-node-modules:/app/node_modules
+    depends_on:
+      - api
+    command: npm run dev -- --host 0.0.0.0
+
+volumes:
+  db-data:
+  api-node-modules:
+  client-node-modules:

@@ -1,0 +1,22 @@
+// Minimal placeholder so `prisma generate` / `prisma migrate dev` work out
+// of the box on first `docker compose up`. Replace with your real data
+// model (User, Conversation, Message, Tag...) as you build the MVP —
+// see chapitre 3 (Architecture & modèle de données) of the rapport.
+
+generator client {
+  provider      = "prisma-client-js"
+  // Matches the two environments this ever runs in: your host (native, for
+  // editor tooling if you generate there too) and the Debian-slim container
+  // both Dockerfiles use.
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model HealthCheck {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+}

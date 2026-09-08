@@ -1,0 +1,13 @@
+# Force LF everywhere, regardless of the OS or Git config on either laptop.
+# Without this, Mac (LF by default) and Windows (CRLF by default) will churn
+# every file's line endings in every diff, and shell scripts checked out
+# with CRLF on Windows will fail with "bad interpreter" inside Linux containers.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
