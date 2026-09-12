@@ -1,7 +1,7 @@
 // Dev/demo data only — never run against production (Railway's `start`
 // script only runs `migrate deploy`, not this file).
 import { PrismaClient } from "@prisma/client";
-import bcrypt from "bcryptjs";
+import { hashPassword } from "../src/lib/password.js";
 
 const prisma = new PrismaClient();
 
@@ -14,7 +14,7 @@ const users = [
 ];
 
 async function main() {
-  const passwordHash = await bcrypt.hash(SEED_PASSWORD, 12);
+  const passwordHash = await hashPassword(SEED_PASSWORD);
 
   for (const user of users) {
     // upsert: re-running `npm run prisma:seed` after a `migrate reset` stays safe.
