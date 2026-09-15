@@ -1,7 +1,6 @@
-// Minimal placeholder so `prisma generate` / `prisma migrate dev` work out
-// of the box on first `docker compose up`. Replace with your real data
-// model (User, Conversation, Message, Tag...) as you build the MVP —
-// see chapitre 3 (Architecture & modèle de données) of the rapport.
+// MVP data model: users, conversations (1:1 or group), membership, messages.
+// See docs/data-model.md for the ER diagram and the reasoning behind the
+// non-obvious constraints (directKey, cascade vs SetNull).
 
 generator client {
   provider      = "prisma-client-js"
@@ -16,7 +15,81 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model HealthCheck {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
+enum ConversationType {
+  DIRECT
+  GROUP
+}
+
+enum MemberRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum Plan {
+  FREE
+  PRO
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  displayName  String
+  avatarUrl    String?
+  plan         Plan     @default(FREE)
+  createdAt    DateTime @default(now())
+
+  createdConversations Conversation[]      @relation("ConversationCreatedBy")
+  memberships          ConversationMember[]
+  messages             Message[]
+}
+
+model Conversation {
+  id          String           @id @default(cuid())
+  type        ConversationType
+  // Only set for GROUP conversations (DIRECT ones are named after the two members client-side).
+  name        String?
+  // "<smallerUserId>:<biggerUserId>" for DIRECT conversations, null for GROUP.
+  // The unique constraint makes "at most one DM between two users" a database
+  // guarantee instead of an application-level check with a race condition.
+  directKey   String?          @unique
+  createdById String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  createdBy User?                 @relation("ConversationCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  members   ConversationMember[]
+  messages  Message[]
+}
+
+model ConversationMember {
+  conversationId String
+  userId         String
+  role           MemberRole @default(MEMBER)
+  joinedAt       DateTime   @default(now())
+  // Drives the unread-count badge: messages in the conversation newer than this are unread.
+  lastReadAt     DateTime   @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, userId])
+}
+
+model Message {
+  id             String    @id @default(cuid())
+  conversationId String
+  senderId       String?
+  content        String
+  createdAt      DateTime  @default(now())
+  editedAt       DateTime?
+  deletedAt      DateTime?
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User?        @relation(fields: [senderId], references: [id], onDelete: SetNull)
+
+  // Every message list query is "messages of this conversation, ordered by time" —
+  // this index is what makes that pagination query fast instead of a full table scan.
+  @@index([conversationId, createdAt])
 }

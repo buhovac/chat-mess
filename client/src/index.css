@@ -1,0 +1,279 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #f5f5f7;
+}
+
+.auth-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 320px;
+  padding: 2rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.auth-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+}
+
+.auth-form input {
+  padding: 0.5rem;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.auth-form button {
+  padding: 0.6rem;
+  font-size: 1rem;
+  border: none;
+  border-radius: 4px;
+  background: #2563eb;
+  color: white;
+  cursor: pointer;
+}
+
+.auth-error {
+  color: #b91c1c;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+/* No responsive polish yet — that's a later stage. */
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+.app-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  padding: 1rem;
+  background: #111827;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.app-sidebar button {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.app-main {
+  flex: 1;
+  padding: 2rem;
+  min-width: 0;
+}
+
+/* Conversation sidebar */
+.conversation-sidebar {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.new-conversation-button {
+  background: #2563eb;
+  color: white;
+}
+
+.conversation-list {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.conversation-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.6rem 0.5rem;
+  border-radius: 6px;
+  color: #d1d5db;
+  text-decoration: none;
+}
+
+.conversation-item:hover {
+  background: #1f2937;
+}
+
+.conversation-item--active {
+  background: #1f2937;
+  color: white;
+}
+
+.conversation-item-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.conversation-item-preview {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.conversation-list-empty {
+  color: #6b7280;
+  font-size: 0.85rem;
+}
+
+/* New conversation dialog */
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.dialog {
+  background: white;
+  color: #111827;
+  width: min(400px, 90vw);
+  max-height: 80vh;
+  padding: 1.5rem;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.dialog input {
+  padding: 0.5rem;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.user-search-results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  max-height: 300px;
+}
+
+.user-search-results button {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  padding: 0.5rem;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.user-search-results button:hover {
+  background: #f3f4f6;
+}
+
+.user-search-name {
+  font-weight: 600;
+}
+
+.user-search-email {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.dialog-close-button {
+  align-self: flex-end;
+  background: #e5e7eb;
+  color: #111827;
+}
+
+/* Conversation view */
+.conversation-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.conversation-header h2 {
+  margin: 0 0 1rem;
+}
+
+.message-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.message-bubble {
+  max-width: 60%;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  background: white;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.message-bubble--own {
+  align-self: flex-end;
+  background: #dbeafe;
+}
+
+.message-sender {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.message-content {
+  margin: 0.15rem 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.message-time {
+  font-size: 0.7rem;
+  color: #9ca3af;
+}
+
+@media (max-width: 768px) {
+  .app-shell {
+    flex-direction: column;
+  }
+
+  .app-sidebar {
+    width: 100%;
+    min-height: auto;
+  }
+}
