@@ -32,3 +32,19 @@ export async function listMessages(conversationId, { before, limit = 50 } = {}) 
     sender: message.sender ? { id: message.sender.id, displayName: message.sender.displayName } : null,
   }));
 }
+
+// Shared by the Socket.IO "message:send" handler (and any future REST POST)
+// so the create path only exists once.
+export async function createMessage(conversationId, senderId, content) {
+  const message = await prisma.message.create({
+    data: { conversationId, senderId, content },
+    include: { sender: { select: { id: true, displayName: true } } },
+  });
+
+  return {
+    id: message.id,
+    content: message.content,
+    createdAt: message.createdAt,
+    sender: { id: message.sender.id, displayName: message.sender.displayName },
+  };
+}

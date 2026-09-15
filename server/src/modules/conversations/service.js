@@ -26,6 +26,16 @@ export async function getMembership(conversationId, userId) {
   });
 }
 
+// Used at socket-connect time to join every room the user is already a
+// member of — ids only, no need for the full conversation DTO here.
+export async function listConversationIdsForUser(userId) {
+  const memberships = await prisma.conversationMember.findMany({
+    where: { userId },
+    select: { conversationId: true },
+  });
+  return memberships.map((m) => m.conversationId);
+}
+
 export async function getConversationById(conversationId) {
   return prisma.conversation.findUnique({
     where: { id: conversationId },

@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { api } from "../../lib/api.js";
+import { socket } from "../../lib/socket.js";
 
 const AuthContext = createContext(null);
 
@@ -14,6 +15,20 @@ export function AuthProvider({ children }) {
       .catch(() => setUser(null))
       .finally(() => setLoading(false));
   }, []);
+
+  // The socket handshake reads the same httpOnly cookie as the REST calls,
+  // so it can only succeed once `user` is known — connect/disconnect here
+  // keeps it in lockstep with auth state (initial load, login, logout).
+  // Always disconnect first: socket.connect() is a no-op while already
+  // connected, so switching straight from one logged-in user to another
+  // (e.g. re-login over a stale session, no explicit logout in between)
+  // would otherwise leave the socket authenticated as the *previous* user.
+  useEffect(() => {
+    socket.disconnect();
+    if (user) {
+      socket.connect();
+    }
+  }, [user]);
 
   const register = useCallback(async (payload) => {
     const data = await api.post("/api/auth/register", payload);
