@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { api } from "../../lib/api.js";
+import { socket } from "../../lib/socket.js";
 import { relativeTime } from "../../lib/relativeTime.js";
 import { NewConversationDialog } from "./NewConversationDialog.jsx";
 
@@ -18,6 +19,15 @@ export function ConversationSidebar() {
 
   useEffect(() => {
     loadConversations().finally(() => setLoading(false));
+  }, [loadConversations]);
+
+  // Global listener (not scoped to the open conversation): keeps the
+  // sidebar preview live even for conversations the user isn't currently
+  // viewing. A refetch is simpler and plenty fast enough than hand-merging
+  // the changed conversation into local state.
+  useEffect(() => {
+    socket.on("message:new", loadConversations);
+    return () => socket.off("message:new", loadConversations);
   }, [loadConversations]);
 
   function handleConversationReady(conversation) {
