@@ -14,7 +14,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
-    "prisma:seed": "node prisma/seed.js"
+    "prisma:seed": "node prisma/seed.js",
+    "lint": "eslint ."
   },
   "prisma": {
     "seed": "node prisma/seed.js"
@@ -35,6 +36,8 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "eslint": "^9.39.5",
+    "globals": "^17.12.0",
     "nodemon": "^3.1.4",
     "socket.io-client": "^4.8.0",
     "supertest": "^7.0.0",
