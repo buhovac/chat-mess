@@ -54,10 +54,30 @@ describe("GET /api/users", () => {
     expect(res.body.users.map((u) => u.displayName)).toContain("Bob Martin");
   });
 
-  it("returns an empty array for an empty query instead of dumping every user", async () => {
+  it("returns all users except me, sorted by displayName, for an empty query", async () => {
     const res = await request(app).get("/api/users?q=").set("Cookie", cookie);
 
     expect(res.status).toBe(200);
-    expect(res.body.users).toEqual([]);
+    expect(res.body.users.map((u) => u.displayName)).toContain("Alice Dupont");
+    expect(res.body.users.map((u) => u.displayName)).toContain("Bob Martin");
+    expect(res.body.users.some((u) => u.id === me.id)).toBe(false);
+    const names = res.body.users.map((u) => u.displayName);
+    expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b)));
+  });
+
+  it("caps the empty-query result at MAX_RESULTS", async () => {
+    const passwordHash = await hashPassword("password123");
+    await prisma.user.createMany({
+      data: Array.from({ length: 25 }, (_, i) => ({
+        email: `${emailPrefix}cap-${i}@example.com`,
+        passwordHash,
+        displayName: `Cap User ${String(i).padStart(2, "0")}`,
+      })),
+    });
+
+    const res = await request(app).get("/api/users?q=").set("Cookie", cookie);
+
+    expect(res.status).toBe(200);
+    expect(res.body.users).toHaveLength(20);
   });
 });
