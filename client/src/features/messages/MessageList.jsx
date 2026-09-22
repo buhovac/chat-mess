@@ -90,16 +90,22 @@ export function MessageList({ conversationId }) {
 
       {!loading && messages.length > 0 && (
         <ul className="message-list">
-          {messages.map((message) => (
-            <li
-              key={message.id}
-              className={`message-bubble${message.sender?.id === user.id ? " message-bubble--own" : ""}${message.pending ? " message-bubble--pending" : ""}`}
-            >
-              <span className="message-sender">{message.sender?.displayName ?? "Utilisateur supprimé"}</span>
-              <p className="message-content">{message.content}</p>
-              <span className="message-time">{message.pending ? "Envoi..." : relativeTime(message.createdAt)}</span>
-            </li>
-          ))}
+          {messages.map((message) =>
+            message.kind === "SYSTEM" ? (
+              <li key={message.id} className="system-message">
+                {message.content}
+              </li>
+            ) : (
+              <li
+                key={message.id}
+                className={`message-bubble${message.sender?.id === user.id ? " message-bubble--own" : ""}${message.pending ? " message-bubble--pending" : ""}`}
+              >
+                <span className="message-sender">{message.sender?.displayName ?? "Utilisateur supprimé"}</span>
+                <p className="message-content">{message.content}</p>
+                <span className="message-time">{message.pending ? "Envoi..." : relativeTime(message.createdAt)}</span>
+              </li>
+            ),
+          )}
         </ul>
       )}
 

@@ -1,7 +1,8 @@
 # Modèle de données
 
-Schéma défini dans `server/prisma/schema.prisma`, appliqué par la migration
-`init_mvp`. Ce document sert de source pour le chapitre UML du rapport.
+Schéma défini dans `server/prisma/schema.prisma`, appliqué par les migrations
+`init_mvp` puis `add_message_kind` (Etape 4). Ce document sert de source pour
+le chapitre UML du rapport.
 
 ## Diagramme entité-relation
 
@@ -46,6 +47,7 @@ erDiagram
         string conversationId FK
         string senderId FK "nullable"
         string content
+        MessageKind kind "TEXT | SYSTEM, default TEXT"
         datetime createdAt
         datetime editedAt "nullable"
         datetime deletedAt "nullable"
@@ -76,3 +78,10 @@ erDiagram
   plus fréquente de l'app est "messages d'une conversation, triés par date,
   paginés" — sans cet index c'est un scan complet de la table à chaque
   ouverture de conversation.
+- **`Message.kind`** (Etape 4) : distingue un message écrit par un utilisateur
+  (`TEXT`) d'une entrée générée par une mutation de groupe — ajout/retrait de
+  membre, changement de rôle, renommage, etc. (`SYSTEM`). Les deux ont
+  `senderId = null` dans certains cas (un `SYSTEM` toujours, un `TEXT` si
+  l'auteur a supprimé son compte) donc `senderId` seul ne suffit pas à les
+  distinguer côté client. `@default(TEXT)` pour que la migration ne touche
+  pas les lignes existantes.

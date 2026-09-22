@@ -31,6 +31,11 @@ enum Plan {
   PRO
 }
 
+enum MessageKind {
+  TEXT
+  SYSTEM
+}
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -78,11 +83,16 @@ model ConversationMember {
 }
 
 model Message {
-  id             String    @id @default(cuid())
+  id             String      @id @default(cuid())
   conversationId String
   senderId       String?
   content        String
-  createdAt      DateTime  @default(now())
+  // TEXT = a real user message; SYSTEM = a group-mutation log entry
+  // (senderId null in both cases) — this is what lets the client render
+  // "Anyssa added Marko" centered/muted instead of as a chat bubble from
+  // "Utilisateur supprimé". Defaults to TEXT so it backfills existing rows.
+  kind           MessageKind @default(TEXT)
+  createdAt      DateTime    @default(now())
   editedAt       DateTime?
   deletedAt      DateTime?
 
