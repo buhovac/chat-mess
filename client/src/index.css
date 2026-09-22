@@ -95,9 +95,24 @@ body {
   min-height: 0;
 }
 
+.sidebar-new-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sidebar-new-buttons button {
+  margin-top: 0;
+}
+
 .new-conversation-button {
   background: #2563eb;
   color: white;
+}
+
+.conversation-item-count {
+  font-weight: 400;
+  color: #9ca3af;
 }
 
 .conversation-list {
@@ -168,7 +183,8 @@ body {
   gap: 0.75rem;
 }
 
-.dialog input {
+.dialog input,
+.dialog select {
   padding: 0.5rem;
   font-size: 1rem;
   border: 1px solid #ccc;
@@ -216,6 +232,53 @@ body {
   color: #111827;
 }
 
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.dialog-actions button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.selected-members {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.selected-member-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.5rem;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-radius: 999px;
+  font-size: 0.85rem;
+}
+
+.selected-member-chip button {
+  border: none;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0;
+}
+
+.user-search-result--selected {
+  background: #eff6ff;
+}
+
 /* Conversation view */
 .conversation-view {
   display: flex;
@@ -223,8 +286,85 @@ body {
   height: 100%;
 }
 
+.conversation-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
 .conversation-header h2 {
-  margin: 0 0 1rem;
+  margin: 0;
+}
+
+.conversation-title--editable {
+  cursor: pointer;
+}
+
+.conversation-title--editable:hover {
+  text-decoration: underline;
+}
+
+.rename-form {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.rename-form input {
+  padding: 0.4rem 0.6rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.rename-form button {
+  padding: 0.4rem 0.75rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.conversation-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.conversation-header-actions button {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+}
+
+button.danger-button {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.member-count {
+  font-size: 0.8rem;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.conversation-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  gap: 1rem;
+}
+
+.conversation-body .message-panel {
+  flex: 1;
+  min-width: 0;
 }
 
 .message-panel {
@@ -233,6 +373,110 @@ body {
   flex: 1;
   min-height: 0;
   gap: 0.75rem;
+}
+
+.system-message {
+  align-self: center;
+  font-size: 0.75rem;
+  color: #9ca3af;
+  text-align: center;
+  padding: 0.15rem 0;
+}
+
+/* Member panel */
+.member-panel {
+  width: 260px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  overflow-y: auto;
+}
+
+.member-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.member-panel-header h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.member-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.member-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.5rem;
+  border-radius: 6px;
+  background: #f9fafb;
+}
+
+.member-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.member-role {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.member-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.member-actions button {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+}
+
+.member-add {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.member-add input {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #111827;
+  color: white;
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 20;
 }
 
 .message-list {

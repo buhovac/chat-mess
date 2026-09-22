@@ -29,6 +29,7 @@ export async function listMessages(conversationId, { before, limit = 50 } = {}) 
     id: message.id,
     content: message.content,
     createdAt: message.createdAt,
+    kind: message.kind,
     sender: message.sender ? { id: message.sender.id, displayName: message.sender.displayName } : null,
   }));
 }
@@ -45,6 +46,7 @@ export async function createMessage(conversationId, senderId, content) {
     id: message.id,
     content: message.content,
     createdAt: message.createdAt,
+    kind: message.kind,
     sender: { id: message.sender.id, displayName: message.sender.displayName },
   };
 }

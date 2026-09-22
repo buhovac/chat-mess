@@ -24,6 +24,22 @@ function authenticateSocket(socket, next) {
   }
 }
 
+// Called from REST routes (not just socket handlers) whenever membership
+// changes outside of a socket event — e.g. a group is created, or someone
+// is added — so every affected user's *already-connected* sockets pick up
+// the new room without waiting for a reconnect. socketsJoin/socketsLeave
+// operate on rooms directly (here, each user's own `user:<id>` room) and
+// are synchronous no-ops if that user has no live socket right now.
+export function joinConversationRooms(io, userIds, conversationId) {
+  for (const userId of userIds) {
+    io.in(`user:${userId}`).socketsJoin(`conversation:${conversationId}`);
+  }
+}
+
+export function leaveConversationRoom(io, userId, conversationId) {
+  io.in(`user:${userId}`).socketsLeave(`conversation:${conversationId}`);
+}
+
 export function registerSocketHandlers(io) {
   io.use(authenticateSocket);
 
