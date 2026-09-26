@@ -109,3 +109,81 @@ client) en même temps que le workflow GitHub Actions, dans l'urgence avant la r
 **Leçon :** vérifier qu'un script mentionné dans un template (PR, CI) existe réellement dès qu'il
 est ajouté au template — sinon il reste une promesse non tenue jusqu'à ce qu'un autre besoin le
 révèle.
+
+## 2026-09-16 — Push refusé : Personal Access Token sans le scope `workflow`
+**Problème :** le push de la branche ajoutant `.github/workflows/ci.yml` (CI + lint) a été
+refusé par GitHub : « refusing to allow a Personal Access Token to create or update workflow
+... without `workflow` scope ». Le même refus se reproduisait aussi bien depuis la session de
+l'agent que depuis mon propre terminal Mac — donc pas un problème de credential ponctuel, mais
+un scope manquant sur le token utilisé partout.
+**Solution :** édition du Personal Access Token (classic) sur GitHub → coche du scope
+`workflow` → mise à jour du token. Le token lui-même ne change pas, donc le credential déjà en
+cache dans le trousseau macOS a continué de fonctionner sans rien reconfigurer. Push repassé, CI
+opérationnelle avant la Revue #1.
+**Leçon :** un token créé pour du push classique ne couvre pas la modification de fichiers sous
+`.github/workflows/` — le scope `workflow` doit être anticipé dès qu'on prévoit d'ajouter du
+CI/CD, pas découvert au moment du push.
+
+## 2026-09-22 — Colonne manquante repérée avant d'écrire le code (Étape 4)
+**Problème :** en préparant le brief pour les conversations de groupe, il est apparu que
+`Message.senderId` nul signifiait déjà deux choses différentes dans le modèle existant (message
+système du type « X a ajouté Y », et message d'un utilisateur dont le compte a été supprimé) —
+sans aucun moyen de les distinguer côté client.
+**Solution :** ajout d'un enum `MessageKind` (`TEXT` / `SYSTEM`, défaut `TEXT`) avant d'écrire la
+moindre route, via une nouvelle migration indépendante (aucune migration existante modifiée).
+**Leçon :** relire le modèle de données existant avant d'ajouter une fonctionnalité qui s'appuie
+dessus fait gagner du temps — ce genre d'ambiguïté est bien plus coûteux à corriger après coup
+qu'à anticiper.
+
+## 2026-09-22 — Cas limite oublié dans le brief initial : dernier membre qui quitte un groupe
+**Problème :** le brief original ne précisait pas ce qui devait se passer si le seul membre
+restant d'un groupe (le OWNER) le quitte — laissé tel quel, cela aurait créé des groupes vides
+orphelins en base, invisibles mais jamais nettoyés.
+**Solution :** ajout explicite, avant implémentation, d'une suppression automatique de la
+conversation quand le dernier membre la quitte, avec un test dédié à ce cas précis.
+**Leçon :** les cas limites de suppression/dernier-membre ne sont presque jamais couverts par le
+brief initial — les chercher activement à chaque nouvelle règle de permission (« qui reste quand
+tout le monde est parti ? ») évite des données fantômes en production.
+
+## 2026-09-24 — Transfert de fichiers sans Git : migration perdue dans un zip
+**Problème :** pour que la contribution « groupes & permissions » soit attribuée à Anyssa (un
+gros morceau par membre étant exigé par le cours), les fichiers ont été transférés par zip
+plutôt que par un commit direct (l'agent n'avait pas le droit de toucher Git sur cette étape). La
+commande utilisée (`zip` construit à partir de `git status --porcelain`) ne recursait pas dans
+les nouveaux dossiers non trackés — le contenu du nouveau dossier de migration Prisma
+(`add_message_kind`) n'a pas suivi, seul `schema.prisma` est arrivé intact côté Anyssa. La CI
+GitHub Actions a échoué avec `P2022 — the column "kind" does not exist`, alors que tout passait
+en local chez moi.
+**Solution :** régénération propre de la migration directement dans l'environnement d'Anyssa
+(`prisma migrate reset` puis `prisma migrate dev --name add_message_kind`) plutôt que de rejouer
+le transfert ; commit et push du fichier correct, CI repassée au vert.
+**Leçon :** un zip construit à partir de `git status --porcelain` ne suit pas les nouveaux
+dossiers sans l'option `-r` — un piège invisible tant qu'aucune migration Prisma (toujours un
+nouveau dossier) ne fait partie du transfert. La CI a détecté ce que les tests locaux ne
+pouvaient pas voir, puisque ma base locale à moi avait déjà la bonne migration depuis sa
+génération initiale.
+
+## 2026-09-25 — Session périmée après un reset de base locale
+**Problème :** après un `prisma migrate reset` en local pour repartir d'une base propre, la
+création d'un groupe échouait avec une erreur serveur 500 (« Foreign key constraint violated:
+Conversation_createdById_fkey »), alors que les 3 utilisateurs de seed étaient bien présents et
+correctement listés dans l'interface.
+**Solution :** le cookie de session (JWT) avait été émis avant le reset et contenait l'ancien
+identifiant utilisateur — supprimé puis recréé avec un nouvel id par le reseed. Une simple
+déconnexion/reconnexion a suffi à obtenir un token à jour référençant le bon utilisateur.
+**Leçon :** un reset de base locale invalide silencieusement toute session déjà ouverte dans le
+navigateur (le token ne se met pas à jour tout seul) — se déconnecter et se reconnecter fait
+partie intégrante de la procédure après un `migrate reset`, pas une étape optionnelle.
+
+## 2026-09-26 — Badge Premium : le plan aurait pu rester périmé dans le cookie
+**Problème (anticipé avant implémentation, pas un bug rencontré en production) :** le plan
+(FREE/PRO) d'un utilisateur est encodé directement dans le JWT de session, pas relu depuis la
+base à chaque requête (choix de performance fait dès l'Étape 2, pour éviter un aller-retour base
+à chaque requête authentifiée). Un changement de plan via l'interrupteur de démo n'aurait donc
+pas été visible ailleurs dans l'application avant une reconnexion complète.
+**Solution :** l'endpoint `POST /api/account/plan` re-signe le cookie de session (en réutilisant
+exactement la même fonction que login/register) au lieu de se contenter d'écrire la nouvelle
+valeur en base.
+**Leçon :** toute donnée mise en cache dans un JWT (ici le plan) doit être re-signée à chaque
+écriture qui la modifie, sinon elle se désynchronise silencieusement de la base — le même
+principe s'appliquera le jour où un vrai flux de paiement remplacera l'interrupteur de démo.
