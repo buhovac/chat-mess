@@ -45,8 +45,15 @@ export function AuthProvider({ children }) {
     setUser(null);
   }, []);
 
+  // Refetches the current user — used after an in-place change (e.g. the
+  // demo plan switcher) that doesn't go through login/register.
+  const refreshUser = useCallback(async () => {
+    const data = await api.get("/api/auth/me");
+    setUser(data.user);
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, loading, register, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, register, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

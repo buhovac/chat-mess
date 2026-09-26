@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../../lib/api.js";
 import { useAuth } from "../auth/AuthProvider.jsx";
 import { ConfirmDialog } from "../../components/ConfirmDialog.jsx";
+import { PlanBadge } from "../../components/PlanBadge.jsx";
 import * as permissions from "./permissions.js";
 
 const DEBOUNCE_MS = 300;
@@ -83,7 +84,11 @@ export function MemberPanel({ conversation, onClose, onChanged }) {
           const isSelf = member.id === user.id;
           return (
             <li key={member.id} className="member-row">
-              <span className="member-name">{member.displayName}{isSelf && " (vous)"}</span>
+              <span className="member-name">
+                {member.displayName}
+                <PlanBadge plan={member.plan} />
+                {isSelf && " (vous)"}
+              </span>
               <span className="member-role">{ROLE_LABELS[member.role]}</span>
               {!isSelf && (
                 <div className="member-actions">

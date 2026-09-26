@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 import { prisma } from "./lib/prisma.js";
 import authRouter from "./modules/auth/router.js";
 import usersRouter from "./modules/users/router.js";
+import accountRouter from "./modules/account/router.js";
 import conversationsRouter from "./modules/conversations/router.js";
 import messagesRouter from "./modules/messages/router.js";
 
@@ -32,6 +33,7 @@ app.get("/api/health", async (_req, res) => {
 
 app.use("/api/auth", authRouter);
 app.use("/api/users", usersRouter);
+app.use("/api/account", accountRouter);
 app.use("/api/conversations", conversationsRouter);
 app.use("/api/conversations/:id/messages", messagesRouter);
 

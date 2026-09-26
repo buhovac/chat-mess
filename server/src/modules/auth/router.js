@@ -2,12 +2,10 @@ import { Router } from "express";
 import rateLimit from "express-rate-limit";
 import { registerSchema, loginSchema } from "./schema.js";
 import { registerUser, loginUser } from "./service.js";
-import { signToken } from "../../lib/jwt.js";
 import { requireAuth } from "../../middleware/requireAuth.js";
+import { cookieOptions, setSessionCookie } from "../../lib/session.js";
 
 const router = Router();
-
-const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
 const authRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -15,20 +13,6 @@ const authRateLimit = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
-
-function cookieOptions() {
-  return {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    maxAge: SEVEN_DAYS_MS,
-  };
-}
-
-function setSessionCookie(res, user) {
-  const token = signToken({ id: user.id, email: user.email, displayName: user.displayName, plan: user.plan });
-  res.cookie("token", token, cookieOptions());
-}
 
 router.post("/register", authRateLimit, async (req, res, next) => {
   const parsed = registerSchema.safeParse(req.body);

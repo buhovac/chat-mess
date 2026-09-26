@@ -20,7 +20,7 @@ export async function listMessages(conversationId, { before, limit = 50 } = {}) 
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     take: limit,
     ...(before ? { cursor: { id: before }, skip: 1 } : {}),
-    include: { sender: { select: { id: true, displayName: true } } },
+    include: { sender: { select: { id: true, displayName: true, plan: true } } },
   });
 
   // Fetched newest-first so the cursor lands on the right page; the API
@@ -30,7 +30,9 @@ export async function listMessages(conversationId, { before, limit = 50 } = {}) 
     content: message.content,
     createdAt: message.createdAt,
     kind: message.kind,
-    sender: message.sender ? { id: message.sender.id, displayName: message.sender.displayName } : null,
+    sender: message.sender
+      ? { id: message.sender.id, displayName: message.sender.displayName, plan: message.sender.plan }
+      : null,
   }));
 }
 
@@ -39,7 +41,7 @@ export async function listMessages(conversationId, { before, limit = 50 } = {}) 
 export async function createMessage(conversationId, senderId, content) {
   const message = await prisma.message.create({
     data: { conversationId, senderId, content },
-    include: { sender: { select: { id: true, displayName: true } } },
+    include: { sender: { select: { id: true, displayName: true, plan: true } } },
   });
 
   return {
@@ -47,6 +49,6 @@ export async function createMessage(conversationId, senderId, content) {
     content: message.content,
     createdAt: message.createdAt,
     kind: message.kind,
-    sender: { id: message.sender.id, displayName: message.sender.displayName },
+    sender: { id: message.sender.id, displayName: message.sender.displayName, plan: message.sender.plan },
   };
 }

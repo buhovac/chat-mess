@@ -5,8 +5,11 @@ import { socket } from "../../lib/socket.js";
 import { relativeTime } from "../../lib/relativeTime.js";
 import { NewConversationDialog } from "./NewConversationDialog.jsx";
 import { NewGroupDialog } from "./NewGroupDialog.jsx";
+import { PlanBadge } from "../../components/PlanBadge.jsx";
+import { useAuth } from "../auth/AuthProvider.jsx";
 
 export function ConversationSidebar() {
+  const { user } = useAuth();
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openDialog, setOpenDialog] = useState(null); // null | "direct" | "group"
@@ -66,6 +69,9 @@ export function ConversationSidebar() {
             >
               <span className="conversation-item-name">
                 {conversation.name}
+                {conversation.type === "DIRECT" && (
+                  <PlanBadge plan={conversation.members.find((m) => m.id !== user.id)?.plan} />
+                )}
                 {conversation.type === "GROUP" && <span className="conversation-item-count"> · {conversation.memberCount}</span>}
               </span>
               {conversation.lastMessage && (
