@@ -3,7 +3,7 @@ import { prisma } from "../../lib/prisma.js";
 import { AppError } from "../../lib/errors.js";
 
 const memberInclude = {
-  members: { include: { user: { select: { id: true, displayName: true } } } },
+  members: { include: { user: { select: { id: true, displayName: true, plan: true } } } },
 };
 
 function directKeyFor(userIdA, userIdB) {
@@ -17,7 +17,12 @@ function toConversationDTO(conversation, currentUserId) {
     id: conversation.id,
     type: conversation.type,
     name: conversation.type === "DIRECT" ? (otherMember?.user.displayName ?? null) : conversation.name,
-    members: conversation.members.map((m) => ({ id: m.user.id, displayName: m.user.displayName, role: m.role })),
+    members: conversation.members.map((m) => ({
+      id: m.user.id,
+      displayName: m.user.displayName,
+      plan: m.user.plan,
+      role: m.role,
+    })),
     memberCount: conversation.members.length,
     // What the client uses to decide which member-management buttons to show
     // (a UX hint only — every mutation route re-checks with authorize.js).

@@ -73,6 +73,12 @@ body {
   min-height: 100vh;
 }
 
+.plan-badge {
+  color: #f59e0b;
+  margin-left: 0.25rem;
+  font-size: 0.85em;
+}
+
 .app-sidebar button {
   margin-top: 1rem;
   padding: 0.5rem 1rem;

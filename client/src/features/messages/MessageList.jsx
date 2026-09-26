@@ -3,6 +3,7 @@ import { api } from "../../lib/api.js";
 import { socket } from "../../lib/socket.js";
 import { relativeTime } from "../../lib/relativeTime.js";
 import { useAuth } from "../auth/AuthProvider.jsx";
+import { PlanBadge } from "../../components/PlanBadge.jsx";
 
 // Merge an incoming message into the list, matching on id first (the normal
 // case) and falling back to clientTempId — that's what lets the ack and the
@@ -57,7 +58,7 @@ export function MessageList({ conversationId }) {
         clientTempId,
         content,
         createdAt: new Date().toISOString(),
-        sender: { id: user.id, displayName: user.displayName },
+        sender: { id: user.id, displayName: user.displayName, plan: user.plan },
         pending: true,
       },
     ]);
@@ -100,7 +101,10 @@ export function MessageList({ conversationId }) {
                 key={message.id}
                 className={`message-bubble${message.sender?.id === user.id ? " message-bubble--own" : ""}${message.pending ? " message-bubble--pending" : ""}`}
               >
-                <span className="message-sender">{message.sender?.displayName ?? "Utilisateur supprimé"}</span>
+                <span className="message-sender">
+                  {message.sender?.displayName ?? "Utilisateur supprimé"}
+                  <PlanBadge plan={message.sender?.plan} />
+                </span>
                 <p className="message-content">{message.content}</p>
                 <span className="message-time">{message.pending ? "Envoi..." : relativeTime(message.createdAt)}</span>
               </li>
