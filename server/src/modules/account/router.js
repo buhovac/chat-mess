@@ -1,6 +1,5 @@
 import { Router } from "express";
 import { requireAuth } from "../../middleware/requireAuth.js";
-import { errorHandler } from "../../lib/errors.js";
 import { setSessionCookie } from "../../lib/session.js";
 import { changePlanSchema } from "./schema.js";
 import { changePlan } from "./service.js";
@@ -24,7 +23,5 @@ router.post("/plan", requireAuth, async (req, res, next) => {
     next(err);
   }
 });
-
-router.use(errorHandler);
 
 export default router;

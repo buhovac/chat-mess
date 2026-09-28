@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { requireAuth } from "../../middleware/requireAuth.js";
 import { loadMembership } from "../../middleware/loadMembership.js";
-import { errorHandler, AppError } from "../../lib/errors.js";
+import { AppError } from "../../lib/errors.js";
 import {
   canReadConversation,
   canAddMember,
@@ -32,6 +32,7 @@ import {
   leaveConversation,
   transferOwnershipAndLeave,
   deleteConversation,
+  markConversationRead,
   toConversationDTO,
 } from "./service.js";
 import { joinConversationRooms, leaveConversationRoom } from "../../sockets/index.js";
@@ -111,6 +112,28 @@ router.get("/:id", requireAuth, async (req, res, next) => {
     }
 
     res.status(200).json({ conversation: toConversationDTO(conversation, req.user.id) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/:id/read", requireAuth, loadMembership, async (req, res, next) => {
+  try {
+    if (!req.conversation || !canReadConversation(req.user, req.membership)) {
+      return res.status(404).json({ error: { code: "NOT_FOUND", message: "Conversation not found" } });
+    }
+
+    const { lastReadAt } = await markConversationRead(req.params.id, req.user.id);
+
+    // Own room only (not the conversation room) — this is "you read it on
+    // one device", so only your other tabs/devices need to sync, not the
+    // other participants.
+    const io = getIo(req);
+    if (io) {
+      io.to(`user:${req.user.id}`).emit("conversation:read", { conversationId: req.params.id, lastReadAt });
+    }
+
+    res.status(200).json({ lastReadAt });
   } catch (err) {
     next(err);
   }
@@ -342,7 +365,5 @@ router.post("/:id/leave", requireAuth, loadMembership, async (req, res, next) =>
     next(err);
   }
 });
-
-router.use(errorHandler);
 
 export default router;

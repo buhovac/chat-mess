@@ -1,6 +1,5 @@
 import { Router } from "express";
 import { requireAuth } from "../../middleware/requireAuth.js";
-import { errorHandler } from "../../lib/errors.js";
 import { canReadConversation } from "../../policies/authorize.js";
 import { getMembership } from "../conversations/service.js";
 import { listMessagesQuerySchema } from "./schema.js";
@@ -31,7 +30,5 @@ router.get("/", requireAuth, async (req, res, next) => {
     next(err);
   }
 });
-
-router.use(errorHandler);
 
 export default router;

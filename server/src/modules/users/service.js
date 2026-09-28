@@ -9,7 +9,7 @@ const MAX_RESULTS = 20;
 // borne la réponse comme pour une recherche normale (un scraper authentifié
 // pourrait de toute façon itérer q=a..z pour obtenir la même liste).
 export async function searchUsers({ query, excludeUserId }) {
-  return prisma.user.findMany({
+  const users = await prisma.user.findMany({
     where: {
       id: { not: excludeUserId },
       ...(query
@@ -25,4 +25,7 @@ export async function searchUsers({ query, excludeUserId }) {
     orderBy: { displayName: "asc" },
     take: MAX_RESULTS,
   });
+  // Postgres alpine (musl) trie par octet : "Zoe" < "alice". Prisma n'a pas
+  // d'orderBy insensible à la casse, donc on re-trie en JS le lot déjà borné.
+  return users.sort((a, b) => a.displayName.localeCompare(b.displayName));
 }

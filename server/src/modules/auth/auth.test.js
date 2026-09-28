@@ -30,6 +30,15 @@ describe("POST /api/auth/register", () => {
 
     expect(res.status).toBe(409);
   });
+
+  it("rejects a password longer than 128 characters with 400", async () => {
+    const res = await request(app)
+      .post("/api/auth/register")
+      .send({ email: "too-long-password@example.com", password: "a".repeat(129), displayName: "Test User" });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("VALIDATION_ERROR");
+  });
 });
 
 describe("POST /api/auth/login", () => {

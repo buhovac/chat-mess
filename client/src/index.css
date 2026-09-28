@@ -79,6 +79,17 @@ body {
   font-size: 0.85em;
 }
 
+.connection-pill {
+  margin: 0.5rem 0 0;
+  padding: 0.3rem 0.6rem;
+  background: #92400e;
+  color: white;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  text-align: center;
+  width: fit-content;
+}
+
 .app-sidebar button {
   margin-top: 1rem;
   padding: 0.5rem 1rem;
@@ -470,19 +481,60 @@ button.danger-button {
   border-radius: 4px;
 }
 
-/* Toast */
-.toast {
+/* Toast stack: fixed bottom-right, newest closest to the corner */
+.toast-stack {
   position: fixed;
   bottom: 1.5rem;
-  left: 50%;
-  transform: translateX(-50%);
+  right: 1.5rem;
+  z-index: 20;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0.5rem;
+  max-width: 320px;
+}
+
+.toast {
   background: #111827;
   color: white;
   padding: 0.6rem 1rem;
   border-radius: 6px;
   font-size: 0.9rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  z-index: 20;
+}
+
+.toast--clickable {
+  cursor: pointer;
+}
+
+.unread-badge {
+  background: #2563eb;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 0.05rem 0.45rem;
+  margin-left: 0.4rem;
+}
+
+.presence-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #9ca3af;
+  margin-right: 0.35rem;
+  vertical-align: middle;
+}
+
+.presence-dot--online {
+  background: #22c55e;
+}
+
+.typing-indicator {
+  font-size: 0.8rem;
+  color: #6b7280;
+  font-style: italic;
+  margin: 0.25rem 0 0;
 }
 
 .message-list {

@@ -7,6 +7,7 @@ import { ConfirmDialog } from "../components/ConfirmDialog.jsx";
 import { useAuth } from "../features/auth/AuthProvider.jsx";
 import { MessageList } from "../features/messages/MessageList.jsx";
 import { MemberPanel } from "../features/conversations/MemberPanel.jsx";
+import { useActiveConversation } from "../features/conversations/ActiveConversationContext.jsx";
 import * as permissions from "../features/conversations/permissions.js";
 
 export default function ConversationPage() {
@@ -14,6 +15,7 @@ export default function ConversationPage() {
   const navigate = useNavigate();
   const showToast = useToast();
   const { user } = useAuth();
+  const { setActiveConversationId } = useActiveConversation();
   const [conversation, setConversation] = useState(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
@@ -41,6 +43,40 @@ export default function ConversationPage() {
   // Harmless no-op if the socket already joined this room.
   useEffect(() => {
     socket.emit("conversation:join", { conversationId });
+  }, [conversationId]);
+
+  // Lets NotificationListener (mounted above the router outlet) know which
+  // conversation is on screen right now, so it can skip toasting for it.
+  useEffect(() => {
+    setActiveConversationId(conversationId);
+    return () => setActiveConversationId(null);
+  }, [conversationId, setActiveConversationId]);
+
+  // Auto-read: mark read on open, whenever the tab regains focus/visibility
+  // while this conversation stays open, and whenever a new message lands in
+  // it while it's the one on screen — otherwise a message arriving right
+  // after the initial mark-as-read would sit unread until the user leaves
+  // and reopens the conversation.
+  useEffect(() => {
+    function markRead() {
+      if (document.visibilityState !== "visible") return;
+      socket.emit("conversation:read", { conversationId });
+    }
+
+    markRead();
+    document.addEventListener("visibilitychange", markRead);
+    window.addEventListener("focus", markRead);
+
+    function handleNewMessage({ conversationId: incomingId }) {
+      if (incomingId === conversationId) markRead();
+    }
+    socket.on("message:new", handleNewMessage);
+
+    return () => {
+      document.removeEventListener("visibilitychange", markRead);
+      window.removeEventListener("focus", markRead);
+      socket.off("message:new", handleNewMessage);
+    };
   }, [conversationId]);
 
   // Membership/role/name changes made by someone else while this
@@ -170,7 +206,7 @@ export default function ConversationPage() {
       {error && <p className="auth-error">{error}</p>}
 
       <div className="conversation-body">
-        <MessageList conversationId={conversationId} />
+        <MessageList conversationId={conversationId} conversation={conversation} />
         {isGroup && panelOpen && (
           <MemberPanel conversation={conversation} onClose={() => setPanelOpen(false)} onChanged={loadConversation} />
         )}

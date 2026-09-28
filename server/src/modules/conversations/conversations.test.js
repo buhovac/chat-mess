@@ -11,6 +11,7 @@ let userA;
 let userB;
 let outsider;
 let cookieA;
+let cookieB;
 let cookieOutsider;
 
 function cookieFor(user) {
@@ -27,6 +28,7 @@ beforeAll(async () => {
   ]);
 
   cookieA = cookieFor(userA);
+  cookieB = cookieFor(userB);
   cookieOutsider = cookieFor(outsider);
 });
 
@@ -124,5 +126,50 @@ describe("GET /api/conversations", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.conversations.some((c) => c.name === "User B")).toBe(true);
+  });
+});
+
+describe("unread counts + POST /:id/read", () => {
+  it("excludes the caller's own messages, counts the others', and zeroes out after marking read", async () => {
+    const created = await request(app)
+      .post("/api/conversations")
+      .set("Cookie", cookieA)
+      .send({ type: "DIRECT", userId: userB.id });
+    const conversationId = created.body.conversation.id;
+
+    // B sends two, A replies with one — from A's point of view that's 2
+    // unread (B's), and from B's point of view, 1 unread (A's reply, sent
+    // after B's own messages).
+    await prisma.message.create({ data: { conversationId, senderId: userB.id, content: "hi 1" } });
+    await prisma.message.create({ data: { conversationId, senderId: userB.id, content: "hi 2" } });
+    await prisma.message.create({ data: { conversationId, senderId: userA.id, content: "reply" } });
+
+    async function unreadFor(cookie) {
+      const res = await request(app).get("/api/conversations").set("Cookie", cookie);
+      return res.body.conversations.find((c) => c.id === conversationId).unreadCount;
+    }
+
+    expect(await unreadFor(cookieA)).toBe(2);
+    expect(await unreadFor(cookieB)).toBe(1);
+
+    const readRes = await request(app).post(`/api/conversations/${conversationId}/read`).set("Cookie", cookieA);
+    expect(readRes.status).toBe(200);
+
+    expect(await unreadFor(cookieA)).toBe(0);
+    // Marking A's copy as read must not affect B's own unread count.
+    expect(await unreadFor(cookieB)).toBe(1);
+  });
+
+  it("404s marking read a conversation the caller isn't a member of", async () => {
+    const created = await request(app)
+      .post("/api/conversations")
+      .set("Cookie", cookieA)
+      .send({ type: "DIRECT", userId: userB.id });
+
+    const res = await request(app)
+      .post(`/api/conversations/${created.body.conversation.id}/read`)
+      .set("Cookie", cookieOutsider);
+
+    expect(res.status).toBe(404);
   });
 });
