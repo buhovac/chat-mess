@@ -78,6 +78,18 @@ describe("POST /api/conversations (type: GROUP)", () => {
     expect(roles).toEqual(["MEMBER", "MEMBER", "OWNER"]);
   });
 
+  it("400s when memberIds has more than 50 entries", async () => {
+    const tooMany = Array.from({ length: 51 }, (_, i) => `ctest${String(i).padStart(20, "0")}`);
+
+    const res = await request(app)
+      .post("/api/conversations")
+      .set("Cookie", cookieOwner)
+      .send({ type: "GROUP", name: "Too big", memberIds: tooMany });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
   it("422s when the distinct other-member count is below 2 (total < 3)", async () => {
     const a = await makeUser("Extra3");
 

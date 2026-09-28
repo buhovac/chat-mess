@@ -12,7 +12,9 @@ const createGroupSchema = z.object({
   // is "other" members — the >=3-total rule (creator + >=2 others) is
   // enforced in service.js, once memberIds has been deduped against the
   // creator's own id.
-  memberIds: z.array(z.string().cuid()).min(2),
+  // Capped so a malicious payload can't force the service's findMany({ id: { in: ... } })
+  // membership check into an enormous IN clause — 50 is already a generous group size.
+  memberIds: z.array(z.string().cuid()).min(2).max(50),
 });
 
 export const createConversationSchema = z.discriminatedUnion("type", [createDirectSchema, createGroupSchema]);

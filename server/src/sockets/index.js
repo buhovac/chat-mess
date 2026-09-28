@@ -1,9 +1,11 @@
 import { parse as parseCookies } from "cookie";
 import { verifyToken } from "../lib/jwt.js";
 import { canPostMessage, canReadConversation } from "../policies/authorize.js";
-import { getMembership, listConversationIdsForUser } from "../modules/conversations/service.js";
+import { getMembership, listConversationIdsForUser, markConversationRead } from "../modules/conversations/service.js";
 import { sendMessageSchema } from "../modules/messages/schema.js";
 import { createMessage } from "../modules/messages/service.js";
+import { addSocket, removeSocket } from "./presence.js";
+import { consumeMessageToken } from "./rateLimiter.js";
 
 // Socket.IO handshakes don't go through Express middleware, so the cookie
 // header has to be parsed by hand here instead of reusing cookie-parser.
@@ -44,14 +46,24 @@ export function registerSocketHandlers(io) {
   io.use(authenticateSocket);
 
   io.on("connection", (socket) => {
-    socket.join(`user:${socket.data.user.id}`);
+    const userId = socket.data.user.id;
+    socket.join(`user:${userId}`);
+
+    // Only the user's *first* socket flips them online — a second tab/device
+    // connecting shouldn't re-announce "online" to everyone.
+    const cameOnline = addSocket(userId, socket.id);
 
     // Join every conversation room the user is already a member of, so
-    // "message:new" reaches them without any extra client round-trip.
-    listConversationIdsForUser(socket.data.user.id)
+    // "message:new" reaches them without any extra client round-trip. Also
+    // where we learn which rooms to announce presence to, since that's
+    // exactly "every conversation this user is in".
+    listConversationIdsForUser(userId)
       .then((conversationIds) => {
         for (const conversationId of conversationIds) {
           socket.join(`conversation:${conversationId}`);
+          if (cameOnline) {
+            io.to(`conversation:${conversationId}`).emit("presence:update", { userId, online: true });
+          }
         }
       })
       .catch((err) => console.error("failed to join conversation rooms", err));
@@ -77,6 +89,10 @@ export function registerSocketHandlers(io) {
     socket.on("message:send", async ({ conversationId, content, clientTempId } = {}, ack) => {
       const reply = typeof ack === "function" ? ack : () => {};
       try {
+        if (!consumeMessageToken(userId)) {
+          return reply({ ok: false, error: { code: "RATE_LIMITED", message: "Too many messages, slow down" } });
+        }
+
         const parsed = sendMessageSchema.safeParse({ content });
         if (!parsed.success) {
           return reply({
@@ -100,8 +116,53 @@ export function registerSocketHandlers(io) {
       }
     });
 
+    // Socket counterpart of POST /:id/read — same service call, same
+    // "own room only" emit, just reachable without a REST round-trip while
+    // the conversation is already open.
+    socket.on("conversation:read", async ({ conversationId } = {}, ack) => {
+      const reply = typeof ack === "function" ? ack : () => {};
+      try {
+        const membership = await getMembership(conversationId, userId);
+        if (!canReadConversation(socket.data.user, membership)) {
+          return reply({ ok: false, error: { code: "FORBIDDEN", message: "Not a member of this conversation" } });
+        }
+
+        const { lastReadAt } = await markConversationRead(conversationId, userId);
+        io.to(`user:${userId}`).emit("conversation:read", { conversationId, lastReadAt });
+        reply({ ok: true, lastReadAt });
+      } catch (err) {
+        console.error(err);
+        reply({ ok: false, error: { code: "INTERNAL_ERROR", message: "Something went wrong" } });
+      }
+    });
+
+    // Typing is fire-and-forget (no ack) — worst case on an error or a
+    // non-member trying it is silence, not a broken UI.
+    async function broadcastTyping(event, conversationId) {
+      try {
+        const membership = await getMembership(conversationId, userId);
+        if (!canReadConversation(socket.data.user, membership)) return;
+        socket.to(`conversation:${conversationId}`).emit(event, { conversationId, userId });
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    socket.on("typing:start", ({ conversationId } = {}) => broadcastTyping("typing:start", conversationId));
+    socket.on("typing:stop", ({ conversationId } = {}) => broadcastTyping("typing:stop", conversationId));
+
     socket.on("disconnect", () => {
-      console.log(`socket disconnected: ${socket.id} (user ${socket.data.user.id})`);
+      const wentOffline = removeSocket(userId, socket.id);
+      if (wentOffline) {
+        listConversationIdsForUser(userId)
+          .then((conversationIds) => {
+            for (const conversationId of conversationIds) {
+              io.to(`conversation:${conversationId}`).emit("presence:update", { userId, online: false });
+            }
+          })
+          .catch((err) => console.error("failed to broadcast presence offline", err));
+      }
+      console.log(`socket disconnected: ${socket.id} (user ${userId})`);
     });
   });
 }

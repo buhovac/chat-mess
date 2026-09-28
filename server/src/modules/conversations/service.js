@@ -41,6 +41,35 @@ async function createSystemMessage(client, conversationId, content) {
   return { id: message.id, content: message.content, createdAt: message.createdAt, kind: message.kind, sender: null };
 }
 
+// One grouped raw query across every conversation the user is in, instead of
+// one unread-count query per conversation (N+1). The threshold is
+// per-conversation (each membership's own lastReadAt), which a plain Prisma
+// `groupBy` can't express — hence raw SQL here. Tagged-template interpolation
+// (not string concatenation) is what makes $queryRaw parameterized/safe.
+// "IS DISTINCT FROM" (not !=) so a null senderId (SYSTEM messages) still
+// counts as "not this user's own message" instead of being silently dropped.
+async function getUnreadCounts(userId) {
+  const rows = await prisma.$queryRaw`
+    SELECT m."conversationId" AS "conversationId", COUNT(*)::int AS "count"
+    FROM "Message" m
+    JOIN "ConversationMember" cm
+      ON cm."conversationId" = m."conversationId" AND cm."userId" = ${userId}
+    WHERE m."createdAt" > cm."lastReadAt"
+      AND m."senderId" IS DISTINCT FROM ${userId}
+      AND m."deletedAt" IS NULL
+    GROUP BY m."conversationId"
+  `;
+  return new Map(rows.map((row) => [row.conversationId, row.count]));
+}
+
+export async function markConversationRead(conversationId, userId) {
+  return prisma.conversationMember.update({
+    where: { conversationId_userId: { conversationId, userId } },
+    data: { lastReadAt: new Date() },
+    select: { lastReadAt: true },
+  });
+}
+
 async function displayNameOf(userId) {
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { displayName: true } });
   return user?.displayName ?? "Quelqu'un";
@@ -82,13 +111,16 @@ export async function getConversationById(conversationId) {
 // activity in JS — Prisma can't order by a related aggregate without raw
 // SQL, and this is one round-trip either way (no N+1).
 export async function listConversationsForUser(userId) {
-  const conversations = await prisma.conversation.findMany({
-    where: { members: { some: { userId } } },
-    include: {
-      ...memberInclude,
-      messages: { orderBy: { createdAt: "desc" }, take: 1 },
-    },
-  });
+  const [conversations, unreadCounts] = await Promise.all([
+    prisma.conversation.findMany({
+      where: { members: { some: { userId } } },
+      include: {
+        ...memberInclude,
+        messages: { orderBy: { createdAt: "desc" }, take: 1 },
+      },
+    }),
+    getUnreadCounts(userId),
+  ]);
 
   return conversations
     .map((conversation) => {
@@ -98,6 +130,7 @@ export async function listConversationsForUser(userId) {
         lastMessage: lastMessage
           ? { content: lastMessage.content, createdAt: lastMessage.createdAt, senderId: lastMessage.senderId }
           : null,
+        unreadCount: unreadCounts.get(conversation.id) ?? 0,
         activityAt: lastMessage ? lastMessage.createdAt : conversation.createdAt,
       };
     })

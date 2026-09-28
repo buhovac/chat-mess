@@ -1,6 +1,5 @@
 import { Router } from "express";
 import { requireAuth } from "../../middleware/requireAuth.js";
-import { errorHandler } from "../../lib/errors.js";
 import { searchUsersQuerySchema } from "./schema.js";
 import { searchUsers } from "./service.js";
 
@@ -19,7 +18,5 @@ router.get("/", requireAuth, async (req, res, next) => {
     next(err);
   }
 });
-
-router.use(errorHandler);
 
 export default router;

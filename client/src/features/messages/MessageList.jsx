@@ -4,6 +4,7 @@ import { socket } from "../../lib/socket.js";
 import { relativeTime } from "../../lib/relativeTime.js";
 import { useAuth } from "../auth/AuthProvider.jsx";
 import { PlanBadge } from "../../components/PlanBadge.jsx";
+import { useConnectionStatus } from "../connection/ConnectionStatusProvider.jsx";
 
 // Merge an incoming message into the list, matching on id first (the normal
 // case) and falling back to clientTempId — that's what lets the ack and the
@@ -21,11 +22,17 @@ function upsertMessage(messages, incoming) {
   return next;
 }
 
-export function MessageList({ conversationId }) {
+const TYPING_STOP_DELAY_MS = 3000;
+
+export function MessageList({ conversationId, conversation }) {
   const { user } = useAuth();
+  const isOffline = useConnectionStatus() !== "connected";
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState("");
+  const [typingUserIds, setTypingUserIds] = useState(() => new Set());
+  const isTypingRef = useRef(false);
+  const typingTimeoutRef = useRef(null);
 
   useEffect(() => {
     setLoading(true);
@@ -46,9 +53,53 @@ export function MessageList({ conversationId }) {
     return () => socket.off("message:new", handleNewMessage);
   }, [conversationId]);
 
+  useEffect(() => {
+    setTypingUserIds(new Set());
+
+    function handleTypingStart({ conversationId: incomingId, userId }) {
+      if (incomingId !== conversationId) return;
+      setTypingUserIds((prev) => new Set(prev).add(userId));
+    }
+    function handleTypingStop({ conversationId: incomingId, userId }) {
+      if (incomingId !== conversationId) return;
+      setTypingUserIds((prev) => {
+        const next = new Set(prev);
+        next.delete(userId);
+        return next;
+      });
+    }
+
+    socket.on("typing:start", handleTypingStart);
+    socket.on("typing:stop", handleTypingStop);
+    return () => {
+      socket.off("typing:start", handleTypingStart);
+      socket.off("typing:stop", handleTypingStop);
+      // Leaving the conversation counts as no longer typing in it.
+      clearTimeout(typingTimeoutRef.current);
+      if (isTypingRef.current) {
+        socket.emit("typing:stop", { conversationId });
+        isTypingRef.current = false;
+      }
+    };
+  }, [conversationId]);
+
+  function handleDraftChange(e) {
+    setDraft(e.target.value);
+
+    if (!isTypingRef.current) {
+      isTypingRef.current = true;
+      socket.emit("typing:start", { conversationId });
+    }
+    clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => {
+      isTypingRef.current = false;
+      socket.emit("typing:stop", { conversationId });
+    }, TYPING_STOP_DELAY_MS);
+  }
+
   function handleSend() {
     const content = draft.trim();
-    if (!content) return;
+    if (!content || isOffline) return;
 
     const clientTempId = crypto.randomUUID();
     setMessages((prev) => [
@@ -63,6 +114,11 @@ export function MessageList({ conversationId }) {
       },
     ]);
     setDraft("");
+    clearTimeout(typingTimeoutRef.current);
+    if (isTypingRef.current) {
+      isTypingRef.current = false;
+      socket.emit("typing:stop", { conversationId });
+    }
 
     socket.emit("message:send", { conversationId, content, clientTempId }, (res) => {
       if (res?.ok) {
@@ -81,6 +137,8 @@ export function MessageList({ conversationId }) {
       handleSend();
     }
   }
+
+  const typingUserNames = typingNames(typingUserIds, conversation, user.id);
 
   return (
     <div className="message-panel">
@@ -113,18 +171,32 @@ export function MessageList({ conversationId }) {
         </ul>
       )}
 
+      {typingUserNames.length > 0 && <p className="typing-indicator">{typingLabel(typingUserNames)}</p>}
+
       <div className="composer">
         <textarea
           className="composer-textarea"
           placeholder="Écrire un message... (Entrée pour envoyer, Maj+Entrée pour une nouvelle ligne)"
           value={draft}
-          onChange={(e) => setDraft(e.target.value)}
+          onChange={handleDraftChange}
           onKeyDown={handleKeyDown}
         />
-        <button className="composer-send-button" onClick={handleSend} disabled={!draft.trim()}>
+        <button className="composer-send-button" onClick={handleSend} disabled={!draft.trim() || isOffline}>
           Envoyer
         </button>
       </div>
     </div>
   );
+}
+
+function typingNames(typingUserIds, conversation, selfId) {
+  if (!conversation) return [];
+  return [...typingUserIds]
+    .filter((id) => id !== selfId)
+    .map((id) => conversation.members.find((m) => m.id === id)?.displayName)
+    .filter(Boolean);
+}
+
+function typingLabel(names) {
+  return names.length === 1 ? `${names[0]} est en train d'écrire…` : `${names.join(", ")} sont en train d'écrire…`;
 }

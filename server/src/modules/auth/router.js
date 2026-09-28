@@ -53,14 +53,4 @@ router.get("/me", requireAuth, (req, res) => {
   res.status(200).json({ user: req.user });
 });
 
-// Central error handler for this router: AuthError instances carry their own
-// status/code, anything else is an unexpected bug (500, no stack leaked).
-router.use((err, _req, res, _next) => {
-  if (err.status) {
-    return res.status(err.status).json({ error: { code: err.code, message: err.message } });
-  }
-  console.error(err);
-  res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Something went wrong" } });
-});
-
 export default router;

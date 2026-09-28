@@ -3,6 +3,7 @@ import { api } from "../../lib/api.js";
 import { useAuth } from "../auth/AuthProvider.jsx";
 import { ConfirmDialog } from "../../components/ConfirmDialog.jsx";
 import { PlanBadge } from "../../components/PlanBadge.jsx";
+import { usePresence } from "../presence/PresenceProvider.jsx";
 import * as permissions from "./permissions.js";
 
 const DEBOUNCE_MS = 300;
@@ -10,6 +11,7 @@ const ROLE_LABELS = { OWNER: "Propriétaire", ADMIN: "Administrateur", MEMBER: "
 
 export function MemberPanel({ conversation, onClose, onChanged }) {
   const { user } = useAuth();
+  const { presence, ensurePresence } = usePresence();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [busyUserId, setBusyUserId] = useState(null);
@@ -18,6 +20,10 @@ export function MemberPanel({ conversation, onClose, onChanged }) {
 
   const myRole = conversation.myRole;
   const memberIds = new Set(conversation.members.map((m) => m.id));
+
+  useEffect(() => {
+    ensurePresence(conversation.members.map((m) => m.id));
+  }, [conversation, ensurePresence]);
 
   useEffect(() => {
     const trimmed = query.trim();
@@ -85,6 +91,7 @@ export function MemberPanel({ conversation, onClose, onChanged }) {
           return (
             <li key={member.id} className="member-row">
               <span className="member-name">
+                <span className={`presence-dot${presence[member.id] ? " presence-dot--online" : ""}`} />
                 {member.displayName}
                 <PlanBadge plan={member.plan} />
                 {isSelf && " (vous)"}

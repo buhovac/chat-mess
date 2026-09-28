@@ -144,3 +144,148 @@ describe("message:send / message:new", () => {
     socketC.close();
   });
 });
+
+describe("typing:start / typing:stop", () => {
+  const emailPrefix = "sockets-typing-test-";
+  let userA;
+  let userB;
+  let outsider;
+  let conversationId;
+
+  beforeAll(async () => {
+    const passwordHash = await hashPassword("password123");
+
+    [userA, userB, outsider] = await Promise.all([
+      prisma.user.create({ data: { email: `${emailPrefix}a@example.com`, passwordHash, displayName: "User A" } }),
+      prisma.user.create({ data: { email: `${emailPrefix}b@example.com`, passwordHash, displayName: "User B" } }),
+      prisma.user.create({ data: { email: `${emailPrefix}c@example.com`, passwordHash, displayName: "Outsider" } }),
+    ]);
+
+    const conversation = await prisma.conversation.create({
+      data: {
+        type: "DIRECT",
+        directKey: [userA.id, userB.id].sort().join(":"),
+        createdById: userA.id,
+        members: { create: [{ userId: userA.id }, { userId: userB.id }] },
+      },
+    });
+    conversationId = conversation.id;
+  });
+
+  afterAll(async () => {
+    await prisma.conversation.deleteMany({ where: { id: conversationId } });
+    await prisma.user.deleteMany({ where: { email: { startsWith: emailPrefix } } });
+  });
+
+  function connectAs(user) {
+    const token = signToken({ id: user.id, email: user.email, displayName: user.displayName, plan: user.plan });
+    const socket = ioClient(`http://localhost:${port}`, {
+      extraHeaders: { Cookie: `token=${token}` },
+      reconnection: false,
+      forceNew: true,
+    });
+    return new Promise((resolve, reject) => {
+      socket.on("connect", () => resolve(socket));
+      socket.on("connect_error", reject);
+    });
+  }
+
+  it("broadcasts to the room except the sender", async () => {
+    const [socketA, socketB] = await Promise.all([connectAs(userA), connectAs(userB)]);
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    const bReceived = new Promise((resolve) => socketB.once("typing:start", resolve));
+    let aReceivedOwnEvent = false;
+    socketA.once("typing:start", () => {
+      aReceivedOwnEvent = true;
+    });
+
+    socketA.emit("typing:start", { conversationId });
+
+    const payload = await bReceived;
+    expect(payload).toMatchObject({ conversationId, userId: userA.id });
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(aReceivedOwnEvent).toBe(false);
+
+    socketA.close();
+    socketB.close();
+  });
+
+  it("is ignored when sent by a non-member (nothing gets broadcast)", async () => {
+    const [socketA, socketOutsider] = await Promise.all([connectAs(userA), connectAs(outsider)]);
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    let received = false;
+    socketA.once("typing:start", () => {
+      received = true;
+    });
+
+    socketOutsider.emit("typing:start", { conversationId });
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(received).toBe(false);
+
+    socketA.close();
+    socketOutsider.close();
+  });
+});
+
+describe("presence:update", () => {
+  const emailPrefix = "sockets-presence-test-";
+  let userA;
+  let userB;
+  let conversationId;
+
+  beforeAll(async () => {
+    const passwordHash = await hashPassword("password123");
+
+    [userA, userB] = await Promise.all([
+      prisma.user.create({ data: { email: `${emailPrefix}a@example.com`, passwordHash, displayName: "User A" } }),
+      prisma.user.create({ data: { email: `${emailPrefix}b@example.com`, passwordHash, displayName: "User B" } }),
+    ]);
+
+    const conversation = await prisma.conversation.create({
+      data: {
+        type: "DIRECT",
+        directKey: [userA.id, userB.id].sort().join(":"),
+        createdById: userA.id,
+        members: { create: [{ userId: userA.id }, { userId: userB.id }] },
+      },
+    });
+    conversationId = conversation.id;
+  });
+
+  afterAll(async () => {
+    await prisma.conversation.deleteMany({ where: { id: conversationId } });
+    await prisma.user.deleteMany({ where: { email: { startsWith: emailPrefix } } });
+  });
+
+  function connectAs(user) {
+    const token = signToken({ id: user.id, email: user.email, displayName: user.displayName, plan: user.plan });
+    const socket = ioClient(`http://localhost:${port}`, {
+      extraHeaders: { Cookie: `token=${token}` },
+      reconnection: false,
+      forceNew: true,
+    });
+    return new Promise((resolve, reject) => {
+      socket.on("connect", () => resolve(socket));
+      socket.on("connect_error", reject);
+    });
+  }
+
+  it("announces online to the room on first connect and offline on last disconnect", async () => {
+    const socketB = await connectAs(userB);
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    const onlineEvent = new Promise((resolve) => socketB.once("presence:update", resolve));
+    const socketA = await connectAs(userA);
+    expect(await onlineEvent).toEqual({ userId: userA.id, online: true });
+
+    const offlineEvent = new Promise((resolve) => socketB.once("presence:update", resolve));
+    socketA.close();
+    expect(await offlineEvent).toEqual({ userId: userA.id, online: false });
+
+    socketB.close();
+  });
+});
