@@ -1,7 +1,12 @@
 import { parse as parseCookies } from "cookie";
-import { verifyToken } from "../lib/jwt.js";
+import { authenticateToken } from "../lib/session.js";
 import { canPostMessage, canReadConversation } from "../policies/authorize.js";
-import { getMembership, listConversationIdsForUser, markConversationRead } from "../modules/conversations/service.js";
+import {
+  getMembership,
+  getPostingMembership,
+  listConversationIdsForUser,
+  markConversationRead,
+} from "../modules/conversations/service.js";
 import { sendMessageSchema } from "../modules/messages/schema.js";
 import { createMessage } from "../modules/messages/service.js";
 import { addSocket, removeSocket } from "./presence.js";
@@ -9,21 +14,19 @@ import { consumeMessageToken } from "./rateLimiter.js";
 
 // Socket.IO handshakes don't go through Express middleware, so the cookie
 // header has to be parsed by hand here instead of reusing cookie-parser.
+// The token check itself is the same one requireAuth uses (user still
+// exists, tokenVersion still current).
 function authenticateSocket(socket, next) {
   const rawCookie = socket.handshake.headers.cookie;
   const token = rawCookie ? parseCookies(rawCookie).token : undefined;
 
-  if (!token) {
-    return next(new Error("unauthorized"));
-  }
-
-  try {
-    const payload = verifyToken(token);
-    socket.data.user = { id: payload.id, email: payload.email, displayName: payload.displayName, plan: payload.plan };
-    next();
-  } catch {
-    next(new Error("unauthorized"));
-  }
+  authenticateToken(token)
+    .then((user) => {
+      if (!user) return next(new Error("unauthorized"));
+      socket.data.user = user;
+      next();
+    })
+    .catch(() => next(new Error("unauthorized")));
 }
 
 // Called from REST routes (not just socket handlers) whenever membership
@@ -40,6 +43,14 @@ export function joinConversationRooms(io, userIds, conversationId) {
 
 export function leaveConversationRoom(io, userId, conversationId) {
   io.in(`user:${userId}`).socketsLeave(`conversation:${conversationId}`);
+}
+
+// Shared by every REST route that writes a SYSTEM message (group mutations,
+// account deletion) — the system message travels on the same "message:new"
+// event as a normal one, so the client needs no special path for it.
+export function emitSystemMessage(io, conversationId, systemMessage) {
+  if (!io || !systemMessage) return;
+  io.to(`conversation:${conversationId}`).emit("message:new", { conversationId, message: systemMessage });
 }
 
 export function registerSocketHandlers(io) {
@@ -101,9 +112,14 @@ export function registerSocketHandlers(io) {
           });
         }
 
-        const membership = await getMembership(conversationId, socket.data.user.id);
-        if (!canPostMessage(socket.data.user, membership)) {
+        const membership = await getPostingMembership(conversationId, socket.data.user.id);
+        if (!canReadConversation(socket.data.user, membership)) {
           return reply({ ok: false, error: { code: "FORBIDDEN", message: "Not a member of this conversation" } });
+        }
+        // A member who still can't post: the only rule that does that is
+        // "DIRECT whose other member deleted their account" (authorize.js).
+        if (!canPostMessage(socket.data.user, membership)) {
+          return reply({ ok: false, error: { code: "RECIPIENT_GONE", message: "The other person deleted their account" } });
         }
 
         const message = await createMessage(conversationId, socket.data.user.id, parsed.data.content);

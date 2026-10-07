@@ -1,7 +1,8 @@
 # Modèle de données
 
 Schéma défini dans `server/prisma/schema.prisma`, appliqué par les migrations
-`init_mvp` puis `add_message_kind` (Etape 4). Ce document sert de source pour
+`init_mvp`, `add_message_kind` (Etape 4) puis `add_user_token_version`
+(paramètres du compte). Ce document sert de source pour
 le chapitre UML du rapport.
 
 ## Diagramme entité-relation
@@ -21,6 +22,7 @@ erDiagram
         string displayName
         string avatarUrl "nullable"
         Plan plan "FREE | PRO"
+        int tokenVersion "default 0"
         datetime createdAt
     }
 
@@ -85,3 +87,44 @@ erDiagram
   l'auteur a supprimé son compte) donc `senderId` seul ne suffit pas à les
   distinguer côté client. `@default(TEXT)` pour que la migration ne touche
   pas les lignes existantes.
+- **`User.tokenVersion`** (paramètres du compte) : copié dans chaque JWT de
+  session et comparé à la base à chaque requête/handshake
+  (`authenticateToken` dans `lib/session.js`). Un changement de mot de passe
+  l'incrémente, ce qui invalide d'un coup toutes les sessions émises avant —
+  un JWT seul, sans état serveur, ne sait pas faire ça. La même requête
+  (lookup par clé primaire) rejette aussi un token dont l'utilisateur a été
+  supprimé. `avatarUrl` reste inutilisé : l'avatar est généré côté client à
+  partir des initiales (aucun stockage de fichier).
+
+## Suppression d'un compte — ce qui se passe exactement
+
+`DELETE /api/account` (mot de passe re-vérifié), dans **une seule
+transaction** (`deleteAccount` → `departAllConversations`) :
+
+1. Pour chaque conversation de l'utilisateur, le même chemin que « quitter »
+   (`departConversation`, partagé avec leave / transfert) :
+   - dernier membre → la conversation est supprimée (cascade sur ses messages) ;
+   - `GROUP` dont il était `OWNER` → la propriété passe à l'`ADMIN` le plus
+     ancien (`joinedAt`), sinon au membre le plus ancien
+     (`pickSuccessorOwner`), message `SYSTEM` « X a supprimé son compte, Y est
+     maintenant propriétaire » ;
+   - sinon (`GROUP` ou `DIRECT`) → message `SYSTEM` « X a supprimé son compte ».
+2. `User` supprimé : ses `ConversationMember` restants partent en cascade,
+   ses `Message` gardent leur contenu avec `senderId = null` (affiché
+   « Utilisateur supprimé »), `createdById` passe à `null`.
+3. Un `DIRECT` survit donc avec **un seul membre** : historique intact, mais
+   `canPostMessage` refuse l'envoi (`RECIPIENT_GONE`) et le DTO expose
+   `recipientGone: true` pour que le client désactive le champ de saisie.
+   `directKey` garde l'ancien id — sans conséquence, un id cuid n'est jamais
+   réattribué.
+
+Après le commit : événements socket aux membres restants (`presence:update`
+hors ligne, `member:role_changed`, `member:removed`, message `SYSTEM`), puis
+`disconnectSockets` sur `user:<id>`, et le cookie est effacé.
+
+**Limite connue (assumée pour cette étape) :** changer son `displayName`
+re-signe son propre cookie, mais n'est pas diffusé en temps réel. Les autres
+clients voient l'ancien nom dans la barre latérale et la liste des membres
+jusqu'à leur prochain refetch (les messages, eux, relisent le nom en base à
+chaque chargement). Un événement `user:updated` vers les rooms des
+conversations de l'utilisateur corrigerait ça.

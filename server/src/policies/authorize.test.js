@@ -31,6 +31,18 @@ describe("canPostMessage", () => {
   it("denies a non-member", () => {
     expect(canPostMessage(user, null)).toBe(false);
   });
+
+  it("denies posting into a DIRECT conversation whose other member deleted their account", () => {
+    expect(canPostMessage(user, { ...membership, conversationType: "DIRECT", memberCount: 1 })).toBe(false);
+  });
+
+  it("allows posting into an intact DIRECT conversation", () => {
+    expect(canPostMessage(user, { ...membership, conversationType: "DIRECT", memberCount: 2 })).toBe(true);
+  });
+
+  it("allows posting into a GROUP regardless of member count", () => {
+    expect(canPostMessage(user, { ...membership, conversationType: "GROUP", memberCount: 1 })).toBe(true);
+  });
 });
 
 // --- Stage 4 permission matrix -------------------------------------------

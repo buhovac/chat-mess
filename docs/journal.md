@@ -187,3 +187,31 @@ valeur en base.
 **Leçon :** toute donnée mise en cache dans un JWT (ici le plan) doit être re-signée à chaque
 écriture qui la modifie, sinon elle se désynchronise silencieusement de la base — le même
 principe s'appliquera le jour où un vrai flux de paiement remplacera l'interrupteur de démo.
+
+## 2026-10-07 — Paramètres du compte : deux pièges trouvés avant qu'ils ne mordent
+**Problème 1 — session survivant à la suppression du compte.** `requireAuth` ne vérifiait que
+la signature du JWT : après une suppression (ou un `migrate reset`, cf. 2026-09-25), un cookie
+encore valide sur un autre appareil restait « authentifié » jusqu'à 7 jours et faisait planter
+les routes en 500 (clé étrangère). Même trou pour un changement de mot de passe, qui ne
+révoquait aucune autre session.
+**Solution :** une requête par clé primaire dans `authenticateToken` (`lib/session.js`),
+partagée par REST et Socket.IO : l'utilisateur doit exister et `tokenVersion` doit
+correspondre. Le changement de mot de passe incrémente `tokenVersion` (toutes les anciennes
+sessions tombent) et re-signe le cookie de la session courante.
+**Problème 2 — présence figée « en ligne ».** Le handler `disconnect` annonce « hors ligne »
+aux rooms trouvées via les memberships… qui n'existent plus une fois le compte supprimé.
+**Solution :** émettre `presence:update` hors ligne explicitement *avant* `disconnectSockets`.
+**Leçon :** une donnée dérivée de l'état (présence, session) doit être recalculée *avant*
+de détruire l'état dont elle dépend.
+
+## 2026-10-07 — Bug découvert en passant : `clearCookie` n'effaçait pas le cookie
+**Problème :** hors du périmètre de l'étape, trouvé en écrivant les tests de suppression de
+compte. Express 4 laisse `maxAge` écraser son propre `expires` dans le passé : le logout
+renvoyait un `token=` vide valable 7 jours au lieu de supprimer le cookie. Ça « marchait »
+uniquement parce qu'un token vide donne 401 — aucun test existant ne pouvait le voir.
+**Solution :** `clearSessionCookie` (`lib/session.js`) retire `maxAge` des options ; les
+autres options doivent rester identiques à celles du `res.cookie`, sinon le navigateur
+considère que c'est un autre cookie et garde le vrai.
+**Leçon :** un test qui vérifie l'en-tête `Set-Cookie` exact attrape ce qu'un test
+« /me renvoie 401 » laisse passer : tester le comportement observable final ne suffit pas
+quand deux défauts se compensent.

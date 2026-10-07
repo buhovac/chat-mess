@@ -48,17 +48,38 @@ describe("Socket.IO handshake auth", () => {
   });
 
   it("accepts a valid session cookie and joins room user:<id>", async () => {
-    const token = signToken({ id: "socket-test-user", email: "socket-test@example.com", displayName: "Socket Test", plan: "FREE" });
+    // The handshake now checks the user exists in the DB, so this needs a
+    // real row rather than a made-up id.
+    const user = await prisma.user.create({
+      data: { email: "socket-handshake-test@example.com", passwordHash: "x", displayName: "Socket Test" },
+    });
+    const token = signToken({ id: user.id, email: user.email, displayName: user.displayName, plan: user.plan });
     const socket = connect({ Cookie: `token=${token}` });
 
-    await new Promise((resolve, reject) => {
-      socket.on("connect", resolve);
-      socket.on("connect_error", reject);
+    try {
+      await new Promise((resolve, reject) => {
+        socket.on("connect", resolve);
+        socket.on("connect_error", reject);
+      });
+
+      const room = io.sockets.adapter.rooms.get(`user:${user.id}`);
+      expect(room?.has(socket.id)).toBe(true);
+    } finally {
+      socket.close();
+      await prisma.user.delete({ where: { id: user.id } });
+    }
+  });
+
+  it("rejects a validly signed token for a user that no longer exists", async () => {
+    const token = signToken({ id: "cknonexistentuserid00", email: "ghost@example.com", displayName: "Ghost", plan: "FREE" });
+    const socket = connect({ Cookie: `token=${token}` });
+
+    const error = await new Promise((resolve, reject) => {
+      socket.on("connect_error", resolve);
+      socket.on("connect", () => reject(new Error("should not have connected")));
     });
 
-    const room = io.sockets.adapter.rooms.get("user:socket-test-user");
-    expect(room?.has(socket.id)).toBe(true);
-
+    expect(error.message).toBe("unauthorized");
     socket.close();
   });
 });

@@ -173,18 +173,25 @@ export function MessageList({ conversationId, conversation }) {
 
       {typingUserNames.length > 0 && <p className="typing-indicator">{typingLabel(typingUserNames)}</p>}
 
-      <div className="composer">
-        <textarea
-          className="composer-textarea"
-          placeholder="Écrire un message... (Entrée pour envoyer, Maj+Entrée pour une nouvelle ligne)"
-          value={draft}
-          onChange={handleDraftChange}
-          onKeyDown={handleKeyDown}
-        />
-        <button className="composer-send-button" onClick={handleSend} disabled={!draft.trim() || isOffline}>
-          Envoyer
-        </button>
-      </div>
+      {/* The other person deleted their account: history stays readable,
+          but there's nobody to deliver to — the server refuses the send
+          anyway (canPostMessage), this just doesn't offer it. */}
+      {conversation?.recipientGone ? (
+        <p className="composer-disabled">Ce compte a été supprimé — tu ne peux plus envoyer de message ici.</p>
+      ) : (
+        <div className="composer">
+          <textarea
+            className="composer-textarea"
+            placeholder="Écrire un message... (Entrée pour envoyer, Maj+Entrée pour une nouvelle ligne)"
+            value={draft}
+            onChange={handleDraftChange}
+            onKeyDown={handleKeyDown}
+          />
+          <button className="composer-send-button" onClick={handleSend} disabled={!draft.trim() || isOffline}>
+            Envoyer
+          </button>
+        </div>
+      )}
     </div>
   );
 }
