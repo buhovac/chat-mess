@@ -3,6 +3,7 @@ import { api } from "../../lib/api.js";
 import { useAuth } from "../auth/AuthProvider.jsx";
 import { ConfirmDialog } from "../../components/ConfirmDialog.jsx";
 import { PlanBadge } from "../../components/PlanBadge.jsx";
+import { Avatar } from "../../components/Avatar.jsx";
 import { usePresence } from "../presence/PresenceProvider.jsx";
 import * as permissions from "./permissions.js";
 
@@ -92,6 +93,7 @@ export function MemberPanel({ conversation, onClose, onChanged }) {
             <li key={member.id} className="member-row">
               <span className="member-name">
                 <span className={`presence-dot${presence[member.id] ? " presence-dot--online" : ""}`} />
+                <Avatar user={member} size="sm" />
                 {member.displayName}
                 <PlanBadge plan={member.plan} />
                 {isSelf && " (vous)"}

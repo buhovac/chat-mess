@@ -105,7 +105,7 @@ export function ConversationSidebar() {
                   {peer && (
                     <span className={`presence-dot${presence[peer.id] ? " presence-dot--online" : ""}`} />
                   )}
-                  {conversation.name}
+                  {conversation.name ?? "Utilisateur supprimé"}
                   {peer && <PlanBadge plan={peer.plan} />}
                   {conversation.type === "GROUP" && <span className="conversation-item-count"> · {conversation.memberCount}</span>}
                   {conversation.unreadCount > 0 && <span className="unread-badge">{conversation.unreadCount}</span>}

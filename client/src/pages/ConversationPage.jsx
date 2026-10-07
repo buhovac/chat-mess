@@ -178,7 +178,8 @@ export default function ConversationPage() {
               setRenaming(true);
             }}
           >
-            {conversation.name}
+            {/* null only for a DIRECT whose other member deleted their account */}
+            {conversation.name ?? "Utilisateur supprimé"}
           </h2>
         )}
 

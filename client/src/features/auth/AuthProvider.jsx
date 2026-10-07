@@ -52,8 +52,35 @@ export function AuthProvider({ children }) {
     setUser(data.user);
   }, []);
 
+  // The server re-signs the cookie with the new name; refetching /me is
+  // what makes it show up everywhere in the UI.
+  const updateProfile = useCallback(async (payload) => {
+    const data = await api.patch("/api/account/profile", payload);
+    setUser(data.user);
+  }, []);
+
+  // The server kicks every live socket of this user (it revokes all older
+  // sessions), and a server-side kick is never auto-reconnected by
+  // socket.io-client — so reconnect explicitly, with the fresh cookie the
+  // response just set. Disconnecting first makes this deterministic even
+  // if the kick packet hasn't arrived yet.
+  const changePassword = useCallback(async (payload) => {
+    await api.post("/api/account/password", payload);
+    socket.disconnect();
+    socket.connect();
+  }, []);
+
+  // Cookie already cleared and sockets already kicked by the server; this
+  // just drops the local session (the effect above disconnects the socket).
+  const deleteAccount = useCallback(async (payload) => {
+    await api.del("/api/account", payload);
+    setUser(null);
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, loading, register, login, logout, refreshUser }}>
+    <AuthContext.Provider
+      value={{ user, loading, register, login, logout, refreshUser, updateProfile, changePassword, deleteAccount }}
+    >
       {children}
     </AuthContext.Provider>
   );

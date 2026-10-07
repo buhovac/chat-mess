@@ -615,6 +615,139 @@ button.danger-button {
   cursor: default;
 }
 
+/* Avatar (initials, see components/Avatar.jsx) */
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  color: white;
+  font-weight: 600;
+  line-height: 1;
+  vertical-align: middle;
+  user-select: none;
+}
+
+.avatar--sm {
+  width: 1.5rem;
+  height: 1.5rem;
+  font-size: 0.65rem;
+  margin-right: 0.4rem;
+}
+
+.avatar--md {
+  width: 2rem;
+  height: 2rem;
+  font-size: 0.8rem;
+}
+
+.avatar--lg {
+  width: 3.5rem;
+  height: 3.5rem;
+  font-size: 1.25rem;
+}
+
+/* Fixed palette, all dark enough for white text to stay readable. */
+.avatar--c0 { background: #2563eb; }
+.avatar--c1 { background: #7c3aed; }
+.avatar--c2 { background: #db2777; }
+.avatar--c3 { background: #dc2626; }
+.avatar--c4 { background: #c2410c; }
+.avatar--c5 { background: #15803d; }
+.avatar--c6 { background: #0f766e; }
+.avatar--c7 { background: #4b5563; }
+
+.app-sidebar-user {
+  display: flex;
+  align-items: center;
+}
+
+.app-sidebar-link {
+  margin-top: 1rem;
+  color: #93c5fd;
+  font-size: 0.9rem;
+}
+
+/* Account settings */
+.settings-page {
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.settings-page h2 {
+  margin: 0;
+}
+
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.settings-section h3 {
+  margin: 0;
+}
+
+.settings-section label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+}
+
+.settings-section input {
+  padding: 0.5rem;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.settings-section button {
+  align-self: flex-start;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.settings-section--danger {
+  border: 1px solid #fecaca;
+}
+
+.settings-avatar-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.settings-hint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.settings-success {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #15803d;
+}
+
+.composer-disabled {
+  margin: 0;
+  padding: 0.75rem;
+  font-size: 0.9rem;
+  color: #6b7280;
+  text-align: center;
+  background: #f3f4f6;
+  border-radius: 6px;
+}
+
 @media (max-width: 768px) {
   .app-shell {
     flex-direction: column;
