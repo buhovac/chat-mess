@@ -27,6 +27,9 @@ function toConversationDTO(conversation, currentUserId) {
     // What the client uses to decide which member-management buttons to show
     // (a UX hint only — every mutation route re-checks with authorize.js).
     myRole: myMembership?.role ?? null,
+    // The other person deleted their account: history stays readable, the
+    // composer is disabled (same rule as canPostMessage, which enforces it).
+    recipientGone: conversation.type === "DIRECT" && conversation.members.length < 2,
   };
 }
 
@@ -79,6 +82,23 @@ export async function getMembership(conversationId, userId) {
   return prisma.conversationMember.findUnique({
     where: { conversationId_userId: { conversationId, userId } },
   });
+}
+
+// getMembership plus what canPostMessage needs to know about the
+// conversation itself (type, member count) — one query instead of three.
+export async function getPostingMembership(conversationId, userId) {
+  const conversation = await prisma.conversation.findUnique({
+    where: { id: conversationId },
+    select: {
+      type: true,
+      _count: { select: { members: true } },
+      members: { where: { userId }, select: { conversationId: true, userId: true, role: true } },
+    },
+  });
+  const membership = conversation?.members[0];
+  return membership
+    ? { ...membership, conversationType: conversation.type, memberCount: conversation._count.members }
+    : null;
 }
 
 export async function countMembers(conversationId) {
@@ -293,6 +313,29 @@ export async function renameConversation(conversationId, actorUserId, name) {
   return { name, systemMessage };
 }
 
+// The one "a member goes away" write path, shared by leave,
+// transfer-and-leave and account deletion so the three can't drift apart.
+// Takes a transaction client: the membership change and the system message
+// that describes it are written together or not at all.
+async function departConversation(tx, conversationId, userId, { memberCount, transferTo, content }) {
+  if (memberCount <= 1) {
+    // The last member leaving would otherwise orphan an empty conversation
+    // in the DB forever — same cleanup as an explicit delete.
+    await tx.conversation.delete({ where: { id: conversationId } });
+    return { deleted: true };
+  }
+
+  if (transferTo) {
+    await tx.conversationMember.update({
+      where: { conversationId_userId: { conversationId, userId: transferTo } },
+      data: { role: "OWNER" },
+    });
+  }
+  await tx.conversationMember.delete({ where: { conversationId_userId: { conversationId, userId } } });
+  const systemMessage = await createSystemMessage(tx, conversationId, content);
+  return { deleted: false, systemMessage };
+}
+
 // The "plain leave" path: canLeave() in authorize.js already ruled out the
 // one case this can't handle (OWNER with others remaining — that goes
 // through transferOwnershipAndLeave instead). memberCount is passed in
@@ -300,42 +343,76 @@ export async function renameConversation(conversationId, actorUserId, name) {
 // it from the canLeave() check.
 export async function leaveConversation(conversationId, actorUserId, memberCount) {
   const actorName = await displayNameOf(actorUserId);
-
-  if (memberCount <= 1) {
-    // The last member leaving would otherwise orphan an empty GROUP in the
-    // DB forever — same cleanup as an explicit delete.
-    await prisma.conversation.delete({ where: { id: conversationId } });
-    return { deleted: true };
-  }
-
-  const systemMessage = await prisma.$transaction(async (tx) => {
-    await tx.conversationMember.delete({ where: { conversationId_userId: { conversationId, userId: actorUserId } } });
-    return createSystemMessage(tx, conversationId, `${actorName} a quitté le groupe`);
-  });
-
-  return { deleted: false, systemMessage };
+  return prisma.$transaction((tx) =>
+    departConversation(tx, conversationId, actorUserId, { memberCount, content: `${actorName} a quitté le groupe` }),
+  );
 }
 
-export async function transferOwnershipAndLeave(conversationId, actorUserId, transferToUserId) {
+export async function transferOwnershipAndLeave(conversationId, actorUserId, transferToUserId, memberCount) {
   const [actorName, newOwner] = await Promise.all([
     displayNameOf(actorUserId),
     prisma.user.findUnique({ where: { id: transferToUserId }, select: { displayName: true } }),
   ]);
 
-  const systemMessage = await prisma.$transaction(async (tx) => {
-    await tx.conversationMember.update({
-      where: { conversationId_userId: { conversationId, userId: transferToUserId } },
-      data: { role: "OWNER" },
-    });
-    await tx.conversationMember.delete({ where: { conversationId_userId: { conversationId, userId: actorUserId } } });
-    return createSystemMessage(
-      tx,
-      conversationId,
-      `${actorName} a quitté le groupe, ${newOwner?.displayName ?? "un membre"} est maintenant propriétaire`,
-    );
+  return prisma.$transaction((tx) =>
+    departConversation(tx, conversationId, actorUserId, {
+      memberCount,
+      transferTo: transferToUserId,
+      content: `${actorName} a quitté le groupe, ${newOwner?.displayName ?? "un membre"} est maintenant propriétaire`,
+    }),
+  );
+}
+
+// Who inherits a GROUP when its OWNER deletes their account (nobody is
+// there to pick, unlike a voluntary leave): the longest-standing ADMIN,
+// else the longest-standing member. userId breaks joinedAt ties so the
+// choice is deterministic. Pure, so it's unit-tested on its own.
+export function pickSuccessorOwner(otherMembers) {
+  const byJoinedAt = [...otherMembers].sort((a, b) => a.joinedAt - b.joinedAt || a.userId.localeCompare(b.userId));
+  return byJoinedAt.find((m) => m.role === "ADMIN") ?? byJoinedAt[0] ?? null;
+}
+
+// Account deletion's half of the work that concerns conversations: the
+// user goes through departConversation in every conversation they're in,
+// exactly as if they had left it (system message, ownership transfer, or
+// deletion when they were the last member) — including DIRECT ones, where
+// the one remaining member keeps the history but can no longer post (see
+// canPostMessage). Runs inside the caller's transaction, before the User
+// row itself is deleted. Returns one entry per conversation so the caller
+// can emit the matching socket events after commit.
+export async function departAllConversations(tx, userId, displayName) {
+  const memberships = await tx.conversationMember.findMany({
+    where: { userId },
+    select: {
+      role: true,
+      conversation: {
+        select: {
+          id: true,
+          type: true,
+          members: {
+            select: { userId: true, role: true, joinedAt: true, user: { select: { displayName: true } } },
+          },
+        },
+      },
+    },
   });
 
-  return { deleted: false, systemMessage };
+  const results = [];
+  for (const { role, conversation } of memberships) {
+    const otherMembers = conversation.members.filter((m) => m.userId !== userId);
+    const successor = conversation.type === "GROUP" && role === "OWNER" ? pickSuccessorOwner(otherMembers) : null;
+    const content = successor
+      ? `${displayName} a supprimé son compte, ${successor.user.displayName} est maintenant propriétaire`
+      : `${displayName} a supprimé son compte`;
+
+    const result = await departConversation(tx, conversation.id, userId, {
+      memberCount: conversation.members.length,
+      transferTo: successor?.userId,
+      content,
+    });
+    results.push({ conversationId: conversation.id, newOwnerId: successor?.userId ?? null, ...result });
+  }
+  return results;
 }
 
 export async function deleteConversation(conversationId) {

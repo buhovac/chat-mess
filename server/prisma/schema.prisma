@@ -43,6 +43,10 @@ model User {
   displayName  String
   avatarUrl    String?
   plan         Plan     @default(FREE)
+  // Copied into every session JWT and compared on each request/handshake:
+  // bumping it (password change) invalidates every token issued before,
+  // which a stateless JWT can't do on its own.
+  tokenVersion Int      @default(0)
   createdAt    DateTime @default(now())
 
   createdConversations Conversation[]      @relation("ConversationCreatedBy")

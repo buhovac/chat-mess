@@ -35,7 +35,7 @@ import {
   markConversationRead,
   toConversationDTO,
 } from "./service.js";
-import { joinConversationRooms, leaveConversationRoom } from "../../sockets/index.js";
+import { emitSystemMessage, joinConversationRooms, leaveConversationRoom } from "../../sockets/index.js";
 
 const router = Router();
 
@@ -44,11 +44,6 @@ const router = Router();
 // call site below guards on this instead of assuming `io` exists.
 function getIo(req) {
   return req.app.get("io") ?? null;
-}
-
-function emitSystemMessage(io, conversationId, systemMessage) {
-  if (!io || !systemMessage) return;
-  io.to(`conversation:${conversationId}`).emit("message:new", { conversationId, message: systemMessage });
 }
 
 // Shared by "remove member" and "leave" (self-removal): tells the removed
@@ -345,7 +340,7 @@ router.post("/:id/leave", requireAuth, loadMembership, async (req, res, next) =>
       throw new AppError(422, "VALIDATION_ERROR", "transferTo must be another member of this conversation");
     }
 
-    const { systemMessage } = await transferOwnershipAndLeave(req.params.id, req.user.id, transferTo);
+    const { systemMessage } = await transferOwnershipAndLeave(req.params.id, req.user.id, transferTo, memberCount);
 
     if (io) {
       io.to(`conversation:${req.params.id}`).emit("member:role_changed", {

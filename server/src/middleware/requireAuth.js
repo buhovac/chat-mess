@@ -1,17 +1,14 @@
-import { verifyToken } from "../lib/jwt.js";
+import { authenticateToken } from "../lib/session.js";
 
-export function requireAuth(req, res, next) {
-  const token = req.cookies?.token;
-
-  if (!token) {
-    return res.status(401).json({ error: { code: "UNAUTHENTICATED", message: "Not authenticated" } });
-  }
-
+export async function requireAuth(req, res, next) {
   try {
-    const payload = verifyToken(token);
-    req.user = { id: payload.id, email: payload.email, displayName: payload.displayName, plan: payload.plan };
+    const user = await authenticateToken(req.cookies?.token);
+    if (!user) {
+      return res.status(401).json({ error: { code: "UNAUTHENTICATED", message: "Not authenticated" } });
+    }
+    req.user = user;
     next();
-  } catch {
-    res.status(401).json({ error: { code: "UNAUTHENTICATED", message: "Not authenticated" } });
+  } catch (err) {
+    next(err);
   }
 }

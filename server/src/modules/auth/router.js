@@ -1,20 +1,13 @@
 import { Router } from "express";
-import rateLimit from "express-rate-limit";
 import { registerSchema, loginSchema } from "./schema.js";
 import { registerUser, loginUser } from "./service.js";
 import { requireAuth } from "../../middleware/requireAuth.js";
-import { cookieOptions, setSessionCookie } from "../../lib/session.js";
+import { passwordRateLimit } from "../../middleware/rateLimits.js";
+import { clearSessionCookie, setSessionCookie, toPublicUser } from "../../lib/session.js";
 
 const router = Router();
 
-const authRateLimit = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 20,
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-router.post("/register", authRateLimit, async (req, res, next) => {
+router.post("/register", passwordRateLimit, async (req, res, next) => {
   const parsed = registerSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: parsed.error.issues[0].message } });
@@ -23,13 +16,13 @@ router.post("/register", authRateLimit, async (req, res, next) => {
   try {
     const user = await registerUser(parsed.data);
     setSessionCookie(res, user);
-    res.status(201).json({ user });
+    res.status(201).json({ user: toPublicUser(user) });
   } catch (err) {
     next(err);
   }
 });
 
-router.post("/login", authRateLimit, async (req, res, next) => {
+router.post("/login", passwordRateLimit, async (req, res, next) => {
   const parsed = loginSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: parsed.error.issues[0].message } });
@@ -38,14 +31,14 @@ router.post("/login", authRateLimit, async (req, res, next) => {
   try {
     const user = await loginUser(parsed.data);
     setSessionCookie(res, user);
-    res.status(200).json({ user });
+    res.status(200).json({ user: toPublicUser(user) });
   } catch (err) {
     next(err);
   }
 });
 
 router.post("/logout", (_req, res) => {
-  res.clearCookie("token", cookieOptions());
+  clearSessionCookie(res);
   res.status(200).json({ ok: true });
 });
 

@@ -6,10 +6,14 @@ export function canReadConversation(user, membership) {
   return Boolean(membership);
 }
 
+// membership here also carries { conversationType, memberCount } (see
+// getPostingMembership): a DIRECT conversation whose other member deleted
+// their account keeps its history but has nobody left to deliver to, so
+// it becomes read-only.
 export function canPostMessage(user, membership) {
-  // Conversation has no deletedAt column yet — membership is the only gate
-  // for now. Extend this once conversations can be archived/soft-deleted.
-  return Boolean(membership);
+  if (!membership) return false;
+  if (membership.conversationType === "DIRECT" && membership.memberCount < 2) return false;
+  return true;
 }
 
 // --- Group membership/role permissions (Stage 4) -----------------------
