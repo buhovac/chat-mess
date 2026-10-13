@@ -209,7 +209,13 @@ export default function ConversationPage() {
       <div className="conversation-body">
         <MessageList conversationId={conversationId} conversation={conversation} />
         {isGroup && panelOpen && (
-          <MemberPanel conversation={conversation} onClose={() => setPanelOpen(false)} onChanged={loadConversation} />
+          <>
+            {/* Mobile bottom-sheet backdrop (display: none on desktop).
+                aria-hidden: the panel's own "Fermer" button is the
+                accessible way to close it. */}
+            <div className="member-panel-backdrop" aria-hidden="true" onClick={() => setPanelOpen(false)} />
+            <MemberPanel conversation={conversation} onClose={() => setPanelOpen(false)} onChanged={loadConversation} />
+          </>
         )}
       </div>
 

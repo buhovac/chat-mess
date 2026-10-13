@@ -13,13 +13,14 @@ body {
   align-items: center;
   justify-content: center;
   min-height: 100vh;
+  padding: 1rem;
 }
 
 .auth-form {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  width: 320px;
+  width: min(320px, 100%);
   padding: 2rem;
   background: white;
   border-radius: 8px;
@@ -56,10 +57,15 @@ body {
   margin: 0;
 }
 
-/* No responsive polish yet — that's a later stage. */
+/* Fixed to the viewport height (not min-height) so the page itself never
+   scrolls: the message list scrolls inside, and the composer stays pinned
+   at the bottom. dvh follows the mobile browser's toolbars and, with
+   interactive-widget=resizes-content in index.html, the on-screen keyboard;
+   the vh line is the fallback for browsers without dvh. */
 .app-shell {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
 }
 
 .app-sidebar {
@@ -70,7 +76,7 @@ body {
   color: white;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  overflow-y: auto;
 }
 
 .plan-badge {
@@ -102,6 +108,14 @@ body {
   flex: 1;
   padding: 2rem;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+/* Only shown in the single-column mobile layout (see the media query). */
+.app-back-link {
+  display: none;
 }
 
 /* Conversation sidebar */
@@ -300,7 +314,8 @@ body {
 .conversation-view {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
 }
 
 .conversation-header {
@@ -398,6 +413,11 @@ button.danger-button {
   color: #9ca3af;
   text-align: center;
   padding: 0.15rem 0;
+}
+
+/* Only shown behind the mobile bottom sheet (see the media query). */
+.member-panel-backdrop {
+  display: none;
 }
 
 /* Member panel */
@@ -583,10 +603,13 @@ button.danger-button {
   opacity: 0.6;
 }
 
+/* margin-top: auto keeps the composer at the bottom even when there is no
+   message list above it to take up the space (loading, empty conversation). */
 .composer {
   display: flex;
   gap: 0.5rem;
   align-items: flex-end;
+  margin-top: auto;
 }
 
 .composer-textarea {
@@ -739,7 +762,7 @@ button.danger-button {
 }
 
 .composer-disabled {
-  margin: 0;
+  margin: auto 0 0;
   padding: 0.75rem;
   font-size: 0.9rem;
   color: #6b7280;
@@ -748,13 +771,338 @@ button.danger-button {
   border-radius: 6px;
 }
 
-@media (max-width: 768px) {
-  .app-shell {
-    flex-direction: column;
+/* Landing page (public "/"). Mobile-first: one column by default, the
+   wider layouts are opt-in from 768px up. All text/background pairs below
+   are at least 4.5:1 (WCAG AA). */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.landing {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: white;
+  color: #111827;
+  line-height: 1.5;
+}
+
+.landing a:focus-visible,
+.app-back-link:focus-visible {
+  outline: 3px solid #1d4ed8;
+  outline-offset: 2px;
+}
+
+.landing main {
+  flex: 1;
+}
+
+.landing-header,
+.landing-hero,
+.landing-section,
+.landing-footer {
+  width: 100%;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+}
+
+.landing-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+.landing-brand {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+/* min-height 44px: comfortable tap target (the brief asks for at least 40). */
+.landing-nav-link,
+.landing-secondary-link,
+.landing-footer a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: #1d4ed8;
+}
+
+.landing-hero {
+  padding-top: 2.5rem;
+  padding-bottom: 2.5rem;
+}
+
+.landing-eyebrow {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #1d4ed8;
+}
+
+.landing-hero h1 {
+  margin: 0;
+  font-size: clamp(1.75rem, 6vw, 3rem);
+  line-height: 1.15;
+  max-width: 20ch;
+}
+
+.landing-subhead {
+  margin: 1rem 0 0;
+  max-width: 60ch;
+  font-size: 1.1rem;
+  color: #374151;
+}
+
+.landing-cta-row {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+  margin-top: 1.75rem;
+}
+
+.landing-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 1.5rem;
+  border-radius: 8px;
+  background: #1d4ed8;
+  color: white;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.landing-cta:hover {
+  background: #1e40af;
+}
+
+.landing-secondary-link {
+  justify-content: center;
+}
+
+.landing-section {
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+}
+
+.landing-section h2 {
+  margin: 0 0 1rem;
+  font-size: 1.5rem;
+}
+
+.landing-cards,
+.landing-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+.landing-card {
+  padding: 1.25rem;
+  background: #f5f5f7;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+}
+
+.landing-card h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+}
+
+.landing-card p {
+  margin: 0;
+  color: #374151;
+}
+
+.landing-step {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 600;
+}
+
+.landing-step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: #1d4ed8;
+  color: white;
+}
+
+.landing-media {
+  margin: 0;
+}
+
+/* height: auto + the width/height attributes on the <img> let the browser
+   reserve the right space before the file loads (no layout jump). */
+.landing-media img,
+.landing-media video {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.landing-media figcaption {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: #4b5563;
+}
+
+.landing-footer {
+  max-width: none;
+  padding-top: 1.25rem;
+  padding-bottom: 1.25rem;
+  background: #111827;
+  color: #e5e7eb;
+  text-align: center;
+}
+
+.landing-footer p {
+  margin: 0;
+}
+
+.landing-footer nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  column-gap: 1.5rem;
+}
+
+.landing-footer a {
+  color: #93c5fd;
+}
+
+.landing-footer a:focus-visible {
+  outline-color: white;
+}
+
+@media (min-width: 768px) {
+  .landing-hero {
+    padding-top: 4.5rem;
+    padding-bottom: 3.5rem;
   }
 
+  .landing-cta-row {
+    flex-direction: row;
+    align-items: center;
+    gap: 1.25rem;
+  }
+
+  .landing-cards,
+  .landing-steps {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* App on small screens: one column at a time. The route decides which —
+   AppShell puts --list on "/app" (conversation list) and --detail on
+   anything deeper (a conversation, the settings). */
+@media (max-width: 768px) {
   .app-sidebar {
     width: 100%;
-    min-height: auto;
+  }
+
+  .app-sidebar button {
+    min-height: 40px;
+  }
+
+  .app-shell--list .app-main,
+  .app-shell--detail .app-sidebar {
+    display: none;
+  }
+
+  .app-main {
+    padding: 0.75rem 1rem 1rem;
+  }
+
+  .app-back-link {
+    display: inline-flex;
+    align-items: center;
+    align-self: flex-start;
+    min-height: 44px;
+    color: #1d4ed8;
+  }
+
+  .conversation-item {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .conversation-header {
+    flex-wrap: wrap;
+    margin-bottom: 0.75rem;
+  }
+
+  .conversation-header-actions {
+    flex-wrap: wrap;
+  }
+
+  .conversation-header-actions button,
+  .composer-send-button {
+    min-height: 40px;
+  }
+
+  .message-bubble {
+    max-width: 85%;
+  }
+
+  /* Member panel becomes a bottom sheet over the conversation instead of
+     a 260px column squeezing it. */
+  .member-panel-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 9;
+  }
+
+  .member-panel {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-height: 75vh;
+    max-height: 75dvh;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.25);
+    z-index: 10;
+  }
+
+  .member-panel-header button,
+  .member-actions button {
+    min-height: 40px;
+    padding: 0.25rem 0.75rem;
+  }
+
+  .settings-page {
+    max-width: none;
+  }
+
+  .settings-section button {
+    align-self: stretch;
+    min-height: 44px;
   }
 }

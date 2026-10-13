@@ -1,4 +1,4 @@
-import { Link, Outlet } from "react-router-dom";
+import { Link, Outlet, useMatch } from "react-router-dom";
 import { useAuth } from "../features/auth/AuthProvider.jsx";
 import { ConversationSidebar } from "../features/conversations/ConversationSidebar.jsx";
 import { ActiveConversationProvider } from "../features/conversations/ActiveConversationContext.jsx";
@@ -17,6 +17,11 @@ function ConnectionPill() {
 
 export default function AppShell() {
   const { user, logout, refreshUser } = useAuth();
+  // On small screens only one column fits: the list on "/app" exactly, the
+  // routed page (conversation, settings) on anything deeper. The URL is the
+  // state, so the browser's own back button works too. CSS ignores these
+  // modifiers above 768px.
+  const showsList = useMatch({ path: "/app", end: true }) !== null;
 
   async function togglePlan() {
     const nextPlan = user.plan === "PRO" ? "FREE" : "PRO";
@@ -28,7 +33,7 @@ export default function AppShell() {
     <ConnectionStatusProvider>
       <ActiveConversationProvider>
         <PresenceProvider>
-          <div className="app-shell">
+          <div className={`app-shell ${showsList ? "app-shell--list" : "app-shell--detail"}`}>
             <aside className="app-sidebar">
               <h2>chat-mess</h2>
               <p className="app-sidebar-user">
@@ -47,6 +52,9 @@ export default function AppShell() {
               <ConversationSidebar />
             </aside>
             <main className="app-main">
+              <Link className="app-back-link" to="/app">
+                ← Conversations
+              </Link>
               <Outlet />
             </main>
             <NotificationListener />

@@ -31,6 +31,7 @@ export function MessageList({ conversationId, conversation }) {
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState("");
   const [typingUserIds, setTypingUserIds] = useState(() => new Set());
+  const listRef = useRef(null);
   const isTypingRef = useRef(false);
   const typingTimeoutRef = useRef(null);
 
@@ -42,6 +43,15 @@ export function MessageList({ conversationId, conversation }) {
       .catch(() => setMessages([]))
       .finally(() => setLoading(false));
   }, [conversationId]);
+
+  // The list scrolls inside a fixed-height shell, so the newest message
+  // would otherwise land below the fold: jump to the bottom on first load
+  // and whenever a message is added.
+  useEffect(() => {
+    if (listRef.current) {
+      listRef.current.scrollTop = listRef.current.scrollHeight;
+    }
+  }, [messages.length, loading]);
 
   useEffect(() => {
     function handleNewMessage({ conversationId: incomingConversationId, message, clientTempId }) {
@@ -148,7 +158,7 @@ export function MessageList({ conversationId, conversation }) {
       )}
 
       {!loading && messages.length > 0 && (
-        <ul className="message-list">
+        <ul className="message-list" ref={listRef}>
           {messages.map((message) =>
             message.kind === "SYSTEM" ? (
               <li key={message.id} className="system-message">
