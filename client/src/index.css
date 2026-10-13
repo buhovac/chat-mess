@@ -1,3 +1,15 @@
+/* Shared spacing/radius scale. Naming the values keeps gaps consistent:
+   a rule picks a step on the scale instead of inventing a new number. */
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --radius: 8px;
+  --sidebar-gutter: 16px;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -68,15 +80,54 @@ body {
   height: 100dvh;
 }
 
+/* --sidebar-divider is scoped here (not in :root) because it only makes
+   sense against this dark background: just visible, never competing with
+   the text. */
 .app-sidebar {
+  --sidebar-divider: #2b3648;
   width: 280px;
   flex-shrink: 0;
-  padding: 1rem;
+  padding: var(--space-4) var(--sidebar-gutter);
   background: #111827;
   color: white;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+}
+
+.app-sidebar > h2 {
+  margin: 0;
+}
+
+/* 1. Identity row: who is logged in, plus the demo-only plan switch. */
+.sidebar-identity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-4) 0;
+}
+
+.sidebar-identity .app-sidebar-user {
+  margin: 0;
+}
+
+/* Demo affordance, deliberately small: it must not compete with the real
+   actions below. The two-class selector outranks the generic
+   ".app-sidebar button" rule that the dialogs still rely on. */
+.app-sidebar .sidebar-demo-link {
+  margin: 0;
+  padding: var(--space-1) var(--space-2);
+  background: none;
+  border: 1px dashed #4b5563;
+  border-radius: 999px;
+  color: #93c5fd;
+  font-size: 0.75rem;
+}
+
+.app-sidebar .sidebar-demo-link:hover {
+  background: #1f2937;
 }
 
 .plan-badge {
@@ -86,7 +137,7 @@ body {
 }
 
 .connection-pill {
-  margin: 0.5rem 0 0;
+  margin: 0 0 var(--space-4);
   padding: 0.3rem 0.6rem;
   background: #92400e;
   color: white;
@@ -126,19 +177,86 @@ body {
   min-height: 0;
 }
 
+/* 2. Primary actions: the only filled buttons in the sidebar. */
 .sidebar-new-buttons {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--space-3);
+  padding: var(--space-4) 0;
+  border-top: 1px solid var(--sidebar-divider);
 }
 
-.sidebar-new-buttons button {
-  margin-top: 0;
-}
-
-.new-conversation-button {
+.app-sidebar .new-conversation-button {
+  margin: 0;
+  padding: 10px 16px;
+  border-radius: var(--radius);
   background: #2563eb;
   color: white;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.app-sidebar .new-conversation-button:hover {
+  background: #1d4ed8;
+}
+
+/* 3. Secondary/account group: outline and plain rows, never filled blue,
+   so the eye goes to the primary actions first. */
+.sidebar-account {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4) 0;
+  border-top: 1px solid var(--sidebar-divider);
+}
+
+.sidebar-nav-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-2);
+  border-radius: var(--radius);
+  color: #e5e7eb;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.sidebar-nav-row:hover {
+  background: #1f2937;
+}
+
+.sidebar-nav-row svg {
+  flex-shrink: 0;
+}
+
+.app-sidebar .sidebar-ghost-button {
+  margin: 0;
+  padding: 10px 16px;
+  background: transparent;
+  border: 1px solid #4b5563;
+  border-radius: var(--radius);
+  color: #e5e7eb;
+  font-size: 0.9rem;
+}
+
+.app-sidebar .sidebar-ghost-button:hover {
+  background: #1f2937;
+}
+
+/* The light blue ring stays visible on the dark sidebar, where the
+   browser's default focus ring can be hard to see. */
+.sidebar-demo-link:focus-visible,
+.new-conversation-button:focus-visible,
+.sidebar-nav-row:focus-visible,
+.sidebar-ghost-button:focus-visible,
+.conversation-item:focus-visible {
+  outline: 2px solid #93c5fd;
+  outline-offset: -2px;
+}
+
+.conversation-sidebar > .conversation-list-empty {
+  margin: var(--space-3) 0;
+  color: #9ca3af;
 }
 
 .conversation-item-count {
@@ -146,20 +264,27 @@ body {
   color: #9ca3af;
 }
 
+/* 4–5. Conversation list. The negative margin cancels the sidebar gutter
+   so rows, their hover background and their dividers run edge to edge;
+   the row's own horizontal padding puts the text back on the gutter. */
 .conversation-list {
   list-style: none;
-  margin: 1rem 0 0;
+  margin: 0 calc(-1 * var(--sidebar-gutter));
   padding: 0;
+  border-top: 1px solid var(--sidebar-divider);
   overflow-y: auto;
   flex: 1;
+}
+
+.conversation-list li + li {
+  border-top: 1px solid var(--sidebar-divider);
 }
 
 .conversation-item {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
-  padding: 0.6rem 0.5rem;
-  border-radius: 6px;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
   color: #d1d5db;
   text-decoration: none;
 }
@@ -686,12 +811,6 @@ button.danger-button {
   align-items: center;
 }
 
-.app-sidebar-link {
-  margin-top: 1rem;
-  color: #93c5fd;
-  font-size: 0.9rem;
-}
-
 /* Account settings */
 .settings-page {
   max-width: 520px;
@@ -1044,10 +1163,6 @@ button.danger-button {
     align-self: flex-start;
     min-height: 44px;
     color: #1d4ed8;
-  }
-
-  .conversation-item {
-    padding: 0.75rem 0.5rem;
   }
 
   .conversation-header {

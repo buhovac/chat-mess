@@ -11,7 +11,9 @@ import { usePresence } from "../presence/PresenceProvider.jsx";
 
 const BASE_TITLE = document.title;
 
-export function ConversationSidebar() {
+// `accountSection` is a slot: AppShell owns the account links (it has
+// logout), this component only decides where they sit.
+export function ConversationSidebar({ accountSection }) {
   const { user } = useAuth();
   const { presence, ensurePresence } = usePresence();
   const [conversations, setConversations] = useState([]);
@@ -86,6 +88,8 @@ export function ConversationSidebar() {
           Nouveau groupe
         </button>
       </div>
+
+      {accountSection}
 
       {loading && <p className="conversation-list-empty">Chargement...</p>}
       {!loading && conversations.length === 0 && (
