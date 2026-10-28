@@ -16,6 +16,7 @@ import accountRouter from "./modules/account/router.js";
 import presenceRouter from "./modules/presence/router.js";
 import conversationsRouter from "./modules/conversations/router.js";
 import messagesRouter from "./modules/messages/router.js";
+import { downloadRouter, uploadRouter } from "./modules/messages/attachments.router.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -83,6 +84,8 @@ app.use("/api/account", accountRouter);
 app.use("/api/presence", presenceRouter);
 app.use("/api/conversations", conversationsRouter);
 app.use("/api/conversations/:id/messages", messagesRouter);
+app.use("/api/conversations/:id/attachments", uploadRouter);
+app.use("/api/attachments", downloadRouter);
 
 // In production the same process also serves the built React app —
 // one service, one process, one port (see /docs "moins d'éléments mobiles").

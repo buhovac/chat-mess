@@ -100,6 +100,14 @@ model Message {
   editedAt       DateTime?
   deletedAt      DateTime?
 
+  // Optional single attachment (E-attach). The bucket is private, so
+  // attachmentUrl holds the R2 object key, never a public URL: clients only
+  // ever see /api/attachments/<messageId>, which re-checks membership.
+  attachmentUrl  String?
+  attachmentType String?
+  attachmentName String?
+  attachmentSize Int?
+
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   sender       User?        @relation(fields: [senderId], references: [id], onDelete: SetNull)
 
