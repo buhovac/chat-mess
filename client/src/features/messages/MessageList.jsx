@@ -4,6 +4,7 @@ import { socket } from "../../lib/socket.js";
 import { relativeTime } from "../../lib/relativeTime.js";
 import { useAuth } from "../auth/AuthProvider.jsx";
 import { PlanBadge } from "../../components/PlanBadge.jsx";
+import { useToast } from "../../components/Toast.jsx";
 import { useConnectionStatus } from "../connection/ConnectionStatusProvider.jsx";
 
 // Merge an incoming message into the list, matching on id first (the normal
@@ -24,13 +25,28 @@ function upsertMessage(messages, incoming) {
 
 const TYPING_STOP_DELAY_MS = 3000;
 
+// Must match the server (multer limit + fileSignature.js). Checked here only
+// to fail fast without uploading 10 MB for nothing — the server stays the
+// authority and re-checks both.
+const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
+const ACCEPTED_TYPES = "image/png,image/jpeg,image/webp,image/gif,application/pdf";
+
+const UPLOAD_ERROR_MESSAGES = {
+  FILE_TOO_LARGE: "Fichier trop volumineux (5 Mo maximum).",
+  UNSUPPORTED_FILE_TYPE: "Type de fichier non autorisé (PNG, JPEG, WEBP, GIF ou PDF).",
+  STORAGE_UNAVAILABLE: "L'envoi de fichiers est indisponible pour le moment.",
+};
+
 export function MessageList({ conversationId, conversation }) {
   const { user } = useAuth();
+  const showToast = useToast();
   const isOffline = useConnectionStatus() !== "connected";
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState("");
   const [typingUserIds, setTypingUserIds] = useState(() => new Set());
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
   const listRef = useRef(null);
   const isTypingRef = useRef(false);
   const typingTimeoutRef = useRef(null);
@@ -141,6 +157,32 @@ export function MessageList({ conversationId, conversation }) {
     });
   }
 
+  async function handleFileSelected(e) {
+    const file = e.target.files[0];
+    // Reset so picking the same file again still fires onChange.
+    e.target.value = "";
+    if (!file) return;
+
+    if (file.size > MAX_ATTACHMENT_BYTES) {
+      showToast(UPLOAD_ERROR_MESSAGES.FILE_TOO_LARGE);
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+    setUploading(true);
+    try {
+      const { message } = await api.upload(`/api/conversations/${conversationId}/attachments`, formData);
+      // The "message:new" broadcast also delivers it; upsertMessage
+      // matches on id, so whichever arrives second is a no-op.
+      setMessages((prev) => upsertMessage(prev, { ...message, pending: false }));
+    } catch (err) {
+      showToast(UPLOAD_ERROR_MESSAGES[err.code] ?? "Échec de l'envoi du fichier.");
+    } finally {
+      setUploading(false);
+    }
+  }
+
   function handleKeyDown(e) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -173,7 +215,8 @@ export function MessageList({ conversationId, conversation }) {
                   {message.sender?.displayName ?? "Utilisateur supprimé"}
                   <PlanBadge plan={message.sender?.plan} />
                 </span>
-                <p className="message-content">{message.content}</p>
+                {message.content && <p className="message-content">{message.content}</p>}
+                {message.attachmentUrl && <Attachment message={message} />}
                 <span className="message-time">{message.pending ? "Envoi..." : relativeTime(message.createdAt)}</span>
               </li>
             ),
@@ -190,6 +233,30 @@ export function MessageList({ conversationId, conversation }) {
         <p className="composer-disabled">Ce compte a été supprimé — tu ne peux plus envoyer de message ici.</p>
       ) : (
         <div className="composer">
+          {/* The native input stays hidden; the visible button forwards the
+              click so it can look like an icon and still be keyboard-reachable. */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={ACCEPTED_TYPES}
+            onChange={handleFileSelected}
+            hidden
+          />
+          <button
+            type="button"
+            className="composer-attach-button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading || isOffline}
+            aria-label="Joindre une image ou un PDF"
+            title="Joindre une image ou un PDF"
+          >
+            <PaperclipIcon />
+          </button>
+          {uploading && (
+            <span className="composer-uploading" role="status">
+              Envoi...
+            </span>
+          )}
           <textarea
             className="composer-textarea"
             placeholder="Écrire un message... (Entrée pour envoyer, Maj+Entrée pour une nouvelle ligne)"
@@ -216,4 +283,41 @@ function typingNames(typingUserIds, conversation, selfId) {
 
 function typingLabel(names) {
   return names.length === 1 ? `${names[0]} est en train d'écrire…` : `${names.join(", ")} sont en train d'écrire…`;
+}
+
+function Attachment({ message }) {
+  if (message.attachmentType?.startsWith("image/")) {
+    return (
+      // Same-origin URL: the server checks membership before streaming it.
+      <a href={message.attachmentUrl} target="_blank" rel="noopener noreferrer" className="attachment-image-link">
+        <img className="attachment-image" src={message.attachmentUrl} alt={message.attachmentName} loading="lazy" />
+      </a>
+    );
+  }
+
+  return (
+    <a href={message.attachmentUrl} target="_blank" rel="noopener noreferrer" className="attachment-file">
+      <span aria-hidden="true">📄</span>
+      <span className="attachment-file-name">{message.attachmentName}</span>
+      <span className="attachment-file-size">{formatSize(message.attachmentSize)}</span>
+    </a>
+  );
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return `${bytes} o`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} Ko`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
+}
+
+function PaperclipIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"
+      />
+    </svg>
+  );
 }
