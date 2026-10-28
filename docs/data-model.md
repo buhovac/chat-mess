@@ -53,6 +53,10 @@ erDiagram
         datetime createdAt
         datetime editedAt "nullable"
         datetime deletedAt "nullable"
+        string attachmentUrl "nullable, clé R2"
+        string attachmentType "nullable"
+        string attachmentName "nullable"
+        int attachmentSize "nullable, octets"
     }
 ```
 
@@ -87,6 +91,17 @@ erDiagram
   l'auteur a supprimé son compte) donc `senderId` seul ne suffit pas à les
   distinguer côté client. `@default(TEXT)` pour que la migration ne touche
   pas les lignes existantes.
+- **Pièce jointe sur `Message`** (E-attach) : 4 colonnes nullables plutôt
+  qu'une table `Attachment`, car le périmètre est « une pièce jointe max par
+  message » — une table séparée n'apporterait qu'une jointure de plus. Le
+  bucket R2 est **privé** : `attachmentUrl` contient la *clé* de l'objet (ex.
+  `conversations/<id>/<uuid>.png`), jamais une URL publique. Le client ne
+  voit que `/api/attachments/<messageId>`, qui revérifie l'appartenance
+  (`canReadConversation`) avant de relayer le fichier — un lien copié et
+  envoyé à un non-membre ne marche donc pas. La clé est aléatoire, jamais le
+  nom d'origine (pas de collision, pas de `../`). Le type stocké est celui
+  détecté dans les premiers octets du fichier, pas celui déclaré par le
+  navigateur.
 - **`User.tokenVersion`** (paramètres du compte) : copié dans chaque JWT de
   session et comparé à la base à chaque requête/handshake
   (`authenticateToken` dans `lib/session.js`). Un changement de mot de passe
