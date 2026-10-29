@@ -395,6 +395,13 @@ body {
   color: #111827;
 }
 
+/* Search dialogs: "Annuler" bottom-left. margin-right: auto also pushes a
+   sibling action ("Créer le groupe") to the right in a .dialog-actions row. */
+.dialog-close-button--left {
+  align-self: flex-start;
+  margin-right: auto;
+}
+
 .dialog-actions {
   display: flex;
   justify-content: flex-end;

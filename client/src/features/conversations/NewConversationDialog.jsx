@@ -47,7 +47,7 @@ export function NewConversationDialog({ onClose, onConversationReady }) {
           ))}
           {settled && results.length === 0 && <li className="conversation-list-empty">Aucun résultat</li>}
         </ul>
-        <button className="dialog-close-button" onClick={onClose}>
+        <button className="dialog-close-button dialog-close-button--left" onClick={onClose}>
           Annuler
         </button>
       </div>

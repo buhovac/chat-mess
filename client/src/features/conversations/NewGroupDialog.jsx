@@ -91,7 +91,7 @@ export function NewGroupDialog({ onClose, onConversationReady }) {
         </ul>
 
         <div className="dialog-actions">
-          <button type="button" className="dialog-close-button" onClick={onClose}>
+          <button type="button" className="dialog-close-button dialog-close-button--left" onClick={onClose}>
             Annuler
           </button>
           <button type="submit" className="new-conversation-button" disabled={!canSubmit}>
