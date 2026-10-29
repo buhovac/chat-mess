@@ -1,35 +1,45 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../lib/api.js";
+
+const DEBOUNCE_MS = 300;
 
 export function NewConversationDialog({ onClose, onConversationReady }) {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
-  const [allUsers, setAllUsers] = useState([]);
+  const [results, setResults] = useState([]);
   const [error, setError] = useState(null);
   const [startingWith, setStartingWith] = useState(null);
 
-  // Un seul fetch à l'ouverture (q vide -> tout le monde sauf moi, déjà trié
-  // par displayName côté serveur, borné à MAX_RESULTS). La recherche ensuite
-  // filtre cette liste en mémoire : pas besoin de retaper une requête réseau
-  // à chaque frappe pour une liste de cette taille.
+  // Query vide : la liste des collègues s'affiche dès l'ouverture. Query
+  // tapée : recherche côté serveur (avec debounce), car le serveur ne renvoie
+  // que 20 utilisateurs par réponse — filtrer ce lot en mémoire raterait les
+  // autres. Même logique que NewGroupDialog.
   useEffect(() => {
-    api
-      .get("/api/users?q=")
-      .then((data) => setAllUsers(data.users))
-      .catch(() => setAllUsers([]));
-  }, []);
+    const trimmed = query.trim();
+    // Une réponse plus lente d'une recherche précédente ne doit pas écraser
+    // les résultats de la recherche en cours.
+    let cancelled = false;
 
-  const results = useMemo(() => {
-    const trimmed = query.trim().toLowerCase();
-    if (!trimmed) {
-      return allUsers;
-    }
-    return allUsers.filter(
-      (user) =>
-        user.displayName.toLowerCase().includes(trimmed) || user.email.toLowerCase().includes(trimmed),
+    const timeoutId = setTimeout(
+      () => {
+        api
+          .get(`/api/users?q=${encodeURIComponent(trimmed)}`)
+          .then((data) => {
+            if (!cancelled) setResults(data.users);
+          })
+          .catch(() => {
+            if (!cancelled) setResults([]);
+          });
+      },
+      trimmed ? DEBOUNCE_MS : 0,
     );
-  }, [query, allUsers]);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
+  }, [query]);
 
   async function handlePick(user) {
     setError(null);
