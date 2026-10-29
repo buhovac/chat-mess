@@ -123,9 +123,9 @@ export default function Landing() {
 
         <section className="landing-section" id="fonctionnalites" aria-labelledby="landing-benefits-title">
           <div className="landing-container">
-            <p className="landing-kicker reveal">Ce qui est déjà construit</p>
+            <p className="landing-kicker reveal">Fonctionnalités</p>
             <h2 id="landing-benefits-title" className="reveal">
-              Pas de promesses : ce que l'app fait aujourd'hui.
+              Mettez de l'ordre dans vos discussions.
             </h2>
             <ul className="landing-cards">
               {BENEFITS.map((benefit, index) => {
