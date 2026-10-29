@@ -1,0 +1,936 @@
+/* Landing page ("/") only — imported by pages/Landing.jsx.
+   Structure: dark nav + hero, light sections, dark final CTA + footer. */
+
+/* ---------------------------------------------------------------------
+   Palette: the ONE place the landing's colors are defined. Same values
+   as the pitch deck. Scoped to .landing so the app itself is unaffected.
+   Contrast rules (checked against WCAG AA):
+   - coral buttons use DARK text (white on coral is only 2.8:1);
+   - teal and amber are decoration only on light backgrounds (icons,
+     glows), never text; amber/coral text is fine on the dark sections.
+   --------------------------------------------------------------------- */
+.landing {
+  --lp-dark: #15102b;
+  --lp-dark-2: #2d1f57;
+  --lp-light: #ffffff;
+  --lp-card: #f6f3ff;
+  --lp-coral: #ff6b4a;
+  --lp-purple: #7c5cfc;
+  --lp-teal: #00b8a3;
+  --lp-amber: #ffb341;
+  --lp-pink: #ff4f81;
+
+  --lp-text: var(--lp-dark);
+  --lp-text-muted: #4a4463;
+  --lp-on-dark: var(--lp-light);
+  --lp-on-dark-muted: rgb(255 255 255 / 0.75);
+  --lp-border: color-mix(in srgb, var(--lp-dark) 8%, transparent);
+
+  /* The real app's bubble colors (index.css), so the hero mockup looks
+     like ChatMess rather than a generic chat. */
+  --lp-app-bubble: #f5f5f7;
+  --lp-app-bubble-own: #dbeafe;
+  --lp-app-blue: #2563eb;
+
+  --lp-nav-height: 4rem;
+  --lp-radius: 18px;
+
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  /* Dark page background, light sections paint their own: on a very tall
+     screen the leftover space above the footer stays dark (continuous
+     with the final CTA) instead of showing a white band. */
+  background: var(--lp-dark);
+  color: var(--lp-text);
+  line-height: 1.55;
+  /* clip, not hidden: hidden would break the sticky nav. Safety net so the
+     blobs/mockup can never cause horizontal scroll on mobile. */
+  overflow-x: clip;
+}
+
+.landing main {
+  flex: 1;
+}
+
+.landing-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+/* Smooth anchor scrolling, only for users who haven't asked for less motion. */
+@media (prefers-reduced-motion: no-preference) {
+  html:has(.landing) {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Anchored sections land below the sticky nav, not under it. */
+.landing [id] {
+  scroll-margin-top: var(--lp-nav-height);
+}
+
+/* Focus rings: purple on light sections, amber on dark ones (both ≥ 3:1
+   against their background). */
+.landing a:focus-visible {
+  outline: 3px solid var(--lp-purple);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+.landing-nav a:focus-visible,
+.landing-hero a:focus-visible,
+.landing-final a:focus-visible,
+.landing-footer a:focus-visible {
+  outline-color: var(--lp-amber);
+}
+
+/* --- Nav ------------------------------------------------------------- */
+
+.landing-nav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: color-mix(in srgb, var(--lp-dark) 82%, transparent);
+  backdrop-filter: blur(14px) saturate(140%);
+  border-bottom: 1px solid rgb(255 255 255 / 0.08);
+}
+
+.landing-nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: var(--lp-nav-height);
+}
+
+.landing-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 44px;
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--lp-on-dark);
+  text-decoration: none;
+}
+
+.landing-logo-mark {
+  width: 1.75rem;
+  height: 1.75rem;
+  flex-shrink: 0;
+}
+
+.landing-logo-mark rect {
+  fill: var(--lp-coral);
+}
+
+.landing-logo-mark path {
+  fill: none;
+  stroke: var(--lp-dark);
+  stroke-width: 2.6;
+  stroke-linecap: round;
+}
+
+.landing-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* min-height 44px: comfortable tap target. */
+.landing-nav-anchor,
+.landing-nav-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--lp-on-dark-muted);
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.15s ease;
+}
+
+.landing-nav-anchor:hover,
+.landing-nav-link:hover {
+  color: var(--lp-on-dark);
+}
+
+/* Section anchors only from tablet up: on a phone the bar would be
+   crammed, and the page is short enough to just scroll. */
+.landing-nav-anchor {
+  display: none;
+}
+
+/* --- Buttons --------------------------------------------------------- */
+
+.landing-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 0 1.75rem;
+  border-radius: 12px;
+  background: var(--lp-coral);
+  color: var(--lp-dark);
+  font-weight: 700;
+  font-size: 1.05rem;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: 0 10px 30px -10px color-mix(in srgb, var(--lp-coral) 70%, transparent);
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.landing-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 36px -10px color-mix(in srgb, var(--lp-coral) 85%, transparent);
+}
+
+.landing-cta--small {
+  min-height: 40px;
+  padding: 0 1rem;
+  font-size: 0.95rem;
+  border-radius: 10px;
+}
+
+.landing-secondary-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  color: var(--lp-on-dark-muted);
+  font-weight: 600;
+  text-underline-offset: 4px;
+}
+
+.landing-secondary-link:hover {
+  color: var(--lp-on-dark);
+}
+
+/* --- Hero ------------------------------------------------------------ */
+
+.landing-hero {
+  position: relative;
+  /* Own stacking context: the blobs (z-index 0) stay behind the content
+     without leaking under the nav. overflow hidden keeps them inside. */
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--lp-dark);
+  color: var(--lp-on-dark);
+  padding: clamp(3rem, 8vw, 6.5rem) 0 clamp(4rem, 10vw, 7.5rem);
+}
+
+.landing-blobs {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Animating ONLY transform (never top/left/width) keeps the drift on the
+   GPU compositor: the blur is rasterized once, then just moved — no
+   layout or repaint per frame, nothing on the main thread. */
+.landing-blob {
+  position: absolute;
+  width: 520px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  opacity: 0.5;
+  filter: blur(100px);
+  will-change: transform;
+  animation: landing-drift-a 20s ease-in-out infinite alternate;
+}
+
+.landing-blob--coral {
+  top: -18%;
+  left: -12%;
+  background: radial-gradient(circle, var(--lp-coral) 0%, transparent 70%);
+}
+
+.landing-blob--purple {
+  top: -5%;
+  right: -14%;
+  background: radial-gradient(circle, var(--lp-purple) 0%, transparent 70%);
+  opacity: 0.65;
+  animation-name: landing-drift-b;
+  animation-duration: 24s;
+}
+
+.landing-blob--teal {
+  bottom: -30%;
+  left: 25%;
+  background: radial-gradient(circle, var(--lp-teal) 0%, transparent 70%);
+  opacity: 0.4;
+  animation-duration: 18s;
+  animation-delay: -6s;
+}
+
+.landing-blob--pink {
+  bottom: -25%;
+  right: 5%;
+  width: 420px;
+  background: radial-gradient(circle, var(--lp-pink) 0%, transparent 70%);
+  opacity: 0.4;
+  animation-name: landing-drift-b;
+  animation-duration: 22s;
+  animation-delay: -10s;
+}
+
+@keyframes landing-drift-a {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(8%, 10%) scale(1.08);
+  }
+  100% {
+    transform: translate(-6%, 4%) scale(0.95);
+  }
+}
+
+@keyframes landing-drift-b {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-10%, 6%) scale(0.92);
+  }
+  100% {
+    transform: translate(4%, -8%) scale(1.06);
+  }
+}
+
+.landing-hero-inner {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 3.5rem;
+  align-items: center;
+}
+
+.landing-eyebrow {
+  display: inline-flex;
+  margin: 0 0 1.5rem;
+  padding: 0.35rem 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--lp-amber) 45%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--lp-amber) 12%, transparent);
+  color: var(--lp-amber);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Oversized, heavy, tight: what makes a headline read "product" rather
+   than "template". clamp() scales it smoothly from 360px to desktop. */
+.landing-hero h1 {
+  margin: 0;
+  font-size: clamp(2.35rem, 1.3rem + 4.6vw, 4.5rem);
+  font-weight: 800;
+  line-height: 1.04;
+  letter-spacing: -0.035em;
+  max-width: 16ch;
+  overflow-wrap: break-word;
+}
+
+.landing-accent {
+  color: var(--lp-coral);
+}
+
+.landing-subhead {
+  margin: 1.75rem 0 0;
+  max-width: 56ch;
+  font-size: clamp(1.05rem, 0.95rem + 0.4vw, 1.2rem);
+  color: var(--lp-on-dark-muted);
+}
+
+.landing-cta-row {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
+  margin-top: 2.25rem;
+}
+
+/* --- Hero mockup (FakeChat.jsx) -------------------------------------- */
+
+.fakechat {
+  margin: 0;
+  width: 100%;
+  max-width: 440px;
+  justify-self: center;
+  perspective: 1200px;
+  animation: fakechat-float 7s ease-in-out infinite;
+}
+
+.fakechat-window {
+  background: var(--lp-light);
+  color: var(--lp-text);
+  border-radius: var(--lp-radius);
+  overflow: hidden;
+  font-size: 0.92rem;
+  line-height: 1.4;
+  box-shadow:
+    0 40px 80px -24px rgb(0 0 0 / 0.6),
+    0 0 0 1px rgb(255 255 255 / 0.08),
+    0 0 60px -10px color-mix(in srgb, var(--lp-purple) 45%, transparent);
+  /* --tilt-x / --tilt-y are written by FakeChat.jsx on mouse move. */
+  transform: rotateX(var(--tilt-y, 0deg)) rotateY(var(--tilt-x, 0deg));
+  transition: transform 0.25s ease-out;
+}
+
+.fakechat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid #ececf2;
+}
+
+.fakechat-title {
+  font-weight: 700;
+}
+
+.fakechat-presence {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.8rem;
+  color: #4b5563;
+}
+
+.fakechat-messages {
+  list-style: none;
+  margin: 0;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.fakechat-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.fakechat-row--own {
+  justify-content: flex-end;
+}
+
+.fakechat-bubble {
+  max-width: 80%;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  background: var(--lp-app-bubble);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.08);
+}
+
+.fakechat-bubble--own {
+  background: var(--lp-app-bubble-own);
+}
+
+.fakechat-bubble p {
+  margin: 0.15rem 0;
+}
+
+.fakechat-sender {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+.fakechat-time {
+  font-size: 0.7rem;
+  color: #5b6170;
+}
+
+/* Typing dots and the final bubble overlap in one grid cell (see JSX). */
+.fakechat-last {
+  display: grid;
+}
+
+.fakechat-typing,
+.fakechat-final {
+  grid-area: 1 / 1;
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.fakechat-dots {
+  display: inline-flex;
+  gap: 4px;
+  padding: 0.7rem 0.8rem;
+  border-radius: 8px;
+  background: var(--lp-app-bubble);
+}
+
+.fakechat-dots span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #9ca3af;
+}
+
+.fakechat-composer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0 1rem 1rem;
+  padding: 0.5rem 0.5rem 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  color: #6b7280;
+}
+
+.fakechat-send {
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  background: var(--lp-app-blue);
+  color: var(--lp-light);
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+/* The sequence: bubble 1, bubble 2 (+300ms), typing dots, last bubble.
+   Every step animates opacity/transform only, and its space is reserved
+   from the start, so the card never changes size mid-animation. */
+@media (prefers-reduced-motion: no-preference) {
+  .fakechat-step,
+  .fakechat-final {
+    animation: fakechat-in 0.45s ease-out both;
+  }
+
+  .fakechat-step--1 {
+    animation-delay: 0.4s;
+  }
+
+  .fakechat-step--2 {
+    animation-delay: 0.7s;
+  }
+
+  .fakechat-typing {
+    animation: fakechat-typing 1.5s ease-in-out 1.2s both;
+  }
+
+  .fakechat-dots span {
+    animation: fakechat-dot 0.9s ease-in-out 1.2s 2;
+  }
+
+  .fakechat-dots span:nth-child(2) {
+    animation-delay: 1.35s;
+  }
+
+  .fakechat-dots span:nth-child(3) {
+    animation-delay: 1.5s;
+  }
+
+  .fakechat-final {
+    animation-delay: 2.7s;
+  }
+}
+
+/* Reduced motion: final state straight away — no dots, last bubble shown. */
+@media (prefers-reduced-motion: reduce) {
+  .fakechat-typing {
+    visibility: hidden;
+  }
+}
+
+@keyframes fakechat-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes fakechat-typing {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  15%,
+  85% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+    transform: none;
+  }
+}
+
+@keyframes fakechat-dot {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes fakechat-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* --- Light sections -------------------------------------------------- */
+
+.landing-section {
+  padding: clamp(4.5rem, 10vw, 8rem) 0;
+  background: var(--lp-light);
+}
+
+.landing-section--tinted {
+  background: var(--lp-card);
+}
+
+.landing-section h2,
+.landing-final h2 {
+  margin: 0 0 clamp(2rem, 5vw, 3.5rem);
+  max-width: 22ch;
+  font-size: clamp(1.85rem, 1.1rem + 3vw, 3rem);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+}
+
+.landing-kicker {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0 0 1rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--lp-dark-2);
+}
+
+.landing-kicker::before {
+  content: "";
+  width: 1.75rem;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--lp-purple);
+}
+
+.landing-cards,
+.landing-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+.landing-card {
+  --card-accent: var(--lp-purple);
+  height: 100%;
+  padding: 2rem 1.75rem;
+  border: 1px solid var(--lp-border);
+  border-radius: var(--lp-radius);
+  background: var(--lp-card);
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.landing-card--coral {
+  --card-accent: var(--lp-coral);
+}
+
+.landing-card--purple {
+  --card-accent: var(--lp-purple);
+}
+
+.landing-card--teal {
+  --card-accent: var(--lp-teal);
+}
+
+.landing-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 22px 44px -16px color-mix(in srgb, var(--card-accent) 60%, transparent);
+}
+
+.landing-card-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  margin-bottom: 1.25rem;
+  border-radius: 50%;
+  background: var(--card-accent);
+  box-shadow: 0 8px 20px -8px var(--card-accent);
+}
+
+.landing-card-icon svg {
+  width: 1.4rem;
+  height: 1.4rem;
+  fill: none;
+  stroke: var(--lp-light);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.landing-card h3 {
+  margin: 0 0 0.6rem;
+  font-size: 1.2rem;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+}
+
+.landing-card p {
+  margin: 0;
+  color: var(--lp-text-muted);
+}
+
+.landing-step {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  height: 100%;
+  padding: 1.75rem;
+  border-radius: var(--lp-radius);
+  background: var(--lp-light);
+  border: 1px solid var(--lp-border);
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+/* 1.25rem bold = "large text" for WCAG, so white on dark-2 is well above
+   the 3:1 it needs (it's ~14:1 anyway). */
+.landing-step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background: var(--lp-dark-2);
+  color: var(--lp-light);
+  font-size: 1.25rem;
+  font-weight: 800;
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--lp-purple) 18%, transparent);
+}
+
+/* --- Dark final CTA + footer ----------------------------------------- */
+
+.landing-final {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: clamp(4.5rem, 10vw, 7.5rem) 0;
+  background: linear-gradient(160deg, var(--lp-dark-2), var(--lp-dark) 70%);
+  color: var(--lp-on-dark);
+  text-align: center;
+}
+
+/* Static glow (no animation here: one moving background per page is enough). */
+.landing-final::before {
+  content: "";
+  position: absolute;
+  inset: -40% 10% auto;
+  z-index: -1;
+  height: 120%;
+  background:
+    radial-gradient(closest-side, color-mix(in srgb, var(--lp-coral) 35%, transparent), transparent),
+    radial-gradient(closest-side at 70% 60%, color-mix(in srgb, var(--lp-purple) 45%, transparent), transparent);
+  filter: blur(40px);
+}
+
+.landing-final-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.landing-final h2 {
+  margin: 0 auto 1rem;
+}
+
+.landing-final p {
+  margin: 0 0 2.25rem;
+  max-width: 48ch;
+  font-size: 1.1rem;
+  color: var(--lp-on-dark-muted);
+}
+
+.landing-footer {
+  padding: 2.5rem 0;
+  background: var(--lp-dark);
+  border-top: 1px solid rgb(255 255 255 / 0.08);
+  color: var(--lp-on-dark-muted);
+}
+
+.landing-footer-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.landing-brand-line {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  font-style: italic;
+  color: rgb(255 255 255 / 0.6);
+}
+
+.landing-footer nav {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 1.75rem;
+}
+
+.landing-footer nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--lp-on-dark-muted);
+  text-underline-offset: 4px;
+}
+
+.landing-footer nav a:hover {
+  color: var(--lp-on-dark);
+}
+
+/* --- Scroll reveal (useReveal.js) -------------------------------------
+   Hidden state only once JS is ready (.landing--reveal-ready) AND the
+   user hasn't asked for reduced motion: otherwise everything is simply
+   visible. Each .reveal--dN adds 100ms of stagger. */
+@media (prefers-reduced-motion: no-preference) {
+  .landing--reveal-ready .reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition:
+      opacity 0.6s ease-out,
+      transform 0.6s ease-out;
+  }
+
+  .landing--reveal-ready .reveal.is-visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  .landing--reveal-ready .reveal--d2 {
+    transition-delay: 0.1s;
+  }
+
+  .landing--reveal-ready .reveal--d3 {
+    transition-delay: 0.2s;
+  }
+}
+
+/* Reduced motion: freeze everything that moves on its own, and no hover lift. */
+@media (prefers-reduced-motion: reduce) {
+  .landing-blob,
+  .fakechat {
+    animation: none;
+  }
+
+  .landing-cta:hover,
+  .landing-card:hover {
+    transform: none;
+  }
+}
+
+/* --- Breakpoints ----------------------------------------------------- */
+
+/* Phones: smaller blobs, and only 3 of them (cheaper to composite). */
+@media (max-width: 767px) {
+  .landing-blob {
+    width: 300px;
+    filter: blur(70px);
+  }
+
+  .landing-blob--pink {
+    display: none;
+  }
+}
+
+/* Very narrow phones (360px): keep logo + both nav actions on one line. */
+@media (max-width: 400px) {
+  .landing-logo {
+    font-size: 1.05rem;
+  }
+
+  .landing-nav-links {
+    gap: 0.6rem;
+  }
+
+  .landing-cta--small {
+    padding: 0 0.75rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .landing-container {
+    padding: 0 2rem;
+  }
+
+  .landing-nav-anchor {
+    display: inline-flex;
+  }
+
+  .landing-nav-links {
+    gap: 1.5rem;
+  }
+
+  .landing-cta-row {
+    flex-direction: row;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .landing-footer-inner {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+/* 3 columns only once each card gets ~250px: at 768px they'd be too
+   narrow for the card titles. */
+@media (min-width: 900px) {
+  .landing-cards,
+  .landing-steps {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .landing-hero-inner {
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 4rem;
+  }
+
+  .fakechat {
+    justify-self: end;
+  }
+}

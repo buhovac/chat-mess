@@ -5,13 +5,11 @@ perdent pas. Le détail de ce qui a été fait reste dans `docs/journal.md`.
 
 ## Étape E6a (landing + passe mobile/accessibilité) — repoussé
 
-- **Page `/pricing` complète.** En attendant, le lien « Tarifs » du pied de
-  page de la landing pointe vers `/register` (un seul `TODO` dans
+- **Section / page tarifs.** Volontairement absente de la refonte E6c :
+  PRO n'a aujourd'hui qu'un badge (bascule « démo »), donc des cartes
+  FREE/PRO affirmeraient des choses fausses. En attendant, le lien
+  « Tarifs » du pied de page pointe vers `/register` (un seul `TODO` dans
   `client/src/pages/Landing.jsx`, à retirer quand la page existe).
-- **Vidéo/gif de démo.** Le `<figure>` de la landing contient une capture
-  d'écran statique (`client/public/landing-app.jpg`) ; il suffit de remplacer
-  le `<img>` par un `<video>`. La capture actuelle montre des messages de
-  test : à refaire avec une conversation de groupe plus présentable.
 - **Réglages Lighthouse** (performance, SEO, accessibilité chiffrée).
 - **Tests d'accessibilité automatisés** (ex. jest-axe) — nouvelle dépendance,
   à valider avant de l'ajouter.
@@ -43,3 +41,9 @@ WEBP/GIF/PDF, bucket R2 privé servi via `GET /api/attachments/:messageId`.
   avec une suppression par préfixe `conversations/<id>/`.
 - **Défilement** : une image qui finit de charger après l'ouverture de la
   conversation peut repousser le dernier message un peu sous le bord.
+
+## Étape E6c (refonte visuelle de la landing) — repoussé
+
+- **Image Open Graph** (`og:image`, 1200×630) : la capture d'écran a été
+  retirée avec la refonte, il n'y a donc pas d'image d'aperçu quand le lien
+  est partagé. Une image fixe aux couleurs du deck suffirait.
