@@ -13,6 +13,12 @@ export function NewGroupDialog({ onClose, onConversationReady }) {
   const [selected, setSelected] = useState([]);
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  // Field hints only appear after a click on "Créer le groupe", not while
+  // the user is still filling the form in.
+  const [attempted, setAttempted] = useState(false);
+
+  const nameTooShort = name.trim().length < 2;
+  const tooFewMembers = selected.length < MIN_OTHER_MEMBERS;
 
   function toggleMember(user) {
     setSelected((prev) =>
@@ -22,6 +28,12 @@ export function NewGroupDialog({ onClose, onConversationReady }) {
 
   async function handleSubmit(e) {
     e.preventDefault();
+    // Checked on click instead of disabling the button: a disabled button
+    // can't tell the user what is missing. The server validates it again.
+    if (nameTooShort || tooFewMembers) {
+      setAttempted(true);
+      return;
+    }
     setError(null);
     setSubmitting(true);
     try {
@@ -39,8 +51,6 @@ export function NewGroupDialog({ onClose, onConversationReady }) {
     }
   }
 
-  const canSubmit = name.trim().length >= 2 && selected.length >= MIN_OTHER_MEMBERS && !submitting;
-
   return (
     <div className="dialog-backdrop dialog-backdrop--top" onClick={onClose}>
       <form className="dialog" onClick={(e) => e.stopPropagation()} onSubmit={handleSubmit}>
@@ -54,6 +64,7 @@ export function NewGroupDialog({ onClose, onConversationReady }) {
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
+        {attempted && nameTooShort && <p className="auth-error">Donne un nom au groupe (au moins 2 caractères).</p>}
 
         {selected.length > 0 && (
           <ul className="selected-members">
@@ -74,6 +85,7 @@ export function NewGroupDialog({ onClose, onConversationReady }) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
+        {attempted && tooFewMembers && <p className="auth-error">Sélectionne au moins 2 collègues.</p>}
         <ul className="user-search-results">
           {results.map((user) => (
             <li key={user.id}>
@@ -94,7 +106,7 @@ export function NewGroupDialog({ onClose, onConversationReady }) {
           <button type="button" className="dialog-close-button dialog-close-button--left" onClick={onClose}>
             Annuler
           </button>
-          <button type="submit" className="new-conversation-button" disabled={!canSubmit}>
+          <button type="submit" className="new-conversation-button" disabled={submitting}>
             Créer le groupe
           </button>
         </div>
