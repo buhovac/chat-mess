@@ -921,11 +921,42 @@ button.danger-button {
   border-radius: 4px;
 }
 
-.settings-section button {
+/* Same look as the sidebar's primary button (.new-conversation-button).
+   ">" on purpose: the delete-account ConfirmDialog renders inside the
+   section, and its buttons must keep the regular dialog style. */
+.settings-section > button {
   align-self: flex-start;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  font-weight: 600;
   cursor: pointer;
+}
+
+/* Transparent border: same height as the danger button, which has one. */
+.settings-section > button:not(.danger-button) {
+  border: 1px solid transparent;
+  background: #2563eb;
+  color: white;
+}
+
+.settings-section > button:not(.danger-button):hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.settings-section > button:not(.danger-button):disabled {
+  background: #93c5fd;
+  cursor: default;
+}
+
+/* Colours come from button.danger-button; only the hover is added. */
+.settings-section > button.danger-button:hover {
+  background: #fee2e2;
+}
+
+.settings-section > button:focus-visible {
+  outline: 2px solid #93c5fd;
+  outline-offset: 2px;
 }
 
 .settings-section--danger {
