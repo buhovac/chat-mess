@@ -508,13 +508,33 @@ body {
   flex-shrink: 0;
 }
 
-.conversation-header-actions button {
-  padding: 0.4rem 0.75rem;
-  font-size: 0.85rem;
+/* Secondary buttons (outline, not filled blue) with the same shape as the
+   rest of the app; a bit less padding than 10px 16px to keep the header slim.
+   The member panel's "Fermer" sits on the same page, so it shares the look. */
+.conversation-header-actions button,
+.member-panel-header button {
+  padding: var(--space-2) var(--space-3);
+  font-size: 0.9rem;
+  color: #111827;
   border: 1px solid #d1d5db;
-  border-radius: 4px;
+  border-radius: var(--radius);
   background: white;
   cursor: pointer;
+}
+
+.conversation-header-actions button:not(.danger-button):hover,
+.member-panel-header button:hover {
+  background: #f3f4f6;
+}
+
+.conversation-header-actions button.danger-button:hover {
+  background: #fee2e2;
+}
+
+.conversation-header-actions button:focus-visible,
+.member-panel-header button:focus-visible {
+  outline: 2px solid #93c5fd;
+  outline-offset: 2px;
 }
 
 button.danger-button {
@@ -805,9 +825,15 @@ button.danger-button {
   border-radius: 6px;
 }
 
+/* Same square footprint as the attach button; the blue fill keeps it
+   the primary action. */
 .composer-send-button {
-  padding: 0.6rem 1rem;
-  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  padding: 0;
   border: none;
   border-radius: 6px;
   background: #2563eb;
@@ -932,11 +958,42 @@ button.danger-button {
   border-radius: 4px;
 }
 
-.settings-section button {
+/* Same look as the sidebar's primary button (.new-conversation-button).
+   ">" on purpose: the delete-account ConfirmDialog renders inside the
+   section, and its buttons must keep the regular dialog style. */
+.settings-section > button {
   align-self: flex-start;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  font-weight: 600;
   cursor: pointer;
+}
+
+/* Transparent border: same height as the danger button, which has one. */
+.settings-section > button:not(.danger-button) {
+  border: 1px solid transparent;
+  background: #2563eb;
+  color: white;
+}
+
+.settings-section > button:not(.danger-button):hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.settings-section > button:not(.danger-button):disabled {
+  background: #93c5fd;
+  cursor: default;
+}
+
+/* Colours come from button.danger-button; only the hover is added. */
+.settings-section > button.danger-button:hover {
+  background: #fee2e2;
+}
+
+.settings-section > button:focus-visible {
+  outline: 2px solid #93c5fd;
+  outline-offset: 2px;
 }
 
 .settings-section--danger {

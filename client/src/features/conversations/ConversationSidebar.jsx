@@ -111,7 +111,9 @@ export function ConversationSidebar({ accountSection }) {
                   )}
                   {conversation.name ?? "Utilisateur supprimé"}
                   {peer && <PlanBadge plan={peer.plan} />}
-                  {conversation.type === "GROUP" && <span className="conversation-item-count"> · {conversation.memberCount}</span>}
+                  {conversation.type === "GROUP" && conversation.memberCount > 1 && (
+                    <span className="conversation-item-count"> ({groupMembersLabel(conversation, user.id)})</span>
+                  )}
                   {conversation.unreadCount > 0 && <span className="unread-badge">{conversation.unreadCount}</span>}
                 </span>
                 {conversation.lastMessage && (
@@ -133,4 +135,14 @@ export function ConversationSidebar({ accountSection }) {
       )}
     </nav>
   );
+}
+
+const GROUP_MEMBERS_SHOWN = 3;
+
+// "fauxr, user2, user3, …": tells groups with similar names apart. Leaves
+// out the current user, who is in every group of their own list.
+function groupMembersLabel(conversation, selfId) {
+  const others = conversation.members.filter((m) => m.id !== selfId).map((m) => m.displayName);
+  const shown = others.slice(0, GROUP_MEMBERS_SHOWN).join(", ");
+  return others.length > GROUP_MEMBERS_SHOWN ? `${shown}, …` : shown;
 }
