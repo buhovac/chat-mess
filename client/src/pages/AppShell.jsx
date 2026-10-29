@@ -56,7 +56,7 @@ export default function AppShell() {
         <PresenceProvider>
           <div className={`app-shell ${showsList ? "app-shell--list" : "app-shell--detail"}`}>
             <aside className="app-sidebar">
-              <h2>chat-mess</h2>
+              <h2>ChatMess</h2>
               <div className="sidebar-identity">
                 <p className="app-sidebar-user">
                   <Avatar user={user} size="sm" />
