@@ -14,21 +14,32 @@ export function NewGroupDialog({ onClose, onConversationReady }) {
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // Empty query: list colleagues right away, like "Nouvelle conversation".
+  // Typed query: still searched server-side (debounced), because the server
+  // caps each answer at 20 users and in-memory filtering would miss the rest.
   useEffect(() => {
     const trimmed = query.trim();
-    if (!trimmed) {
-      setResults([]);
-      return;
-    }
+    // A slower earlier request must not overwrite the results of the current query.
+    let cancelled = false;
 
-    const timeoutId = setTimeout(() => {
-      api
-        .get(`/api/users?q=${encodeURIComponent(trimmed)}`)
-        .then((data) => setResults(data.users))
-        .catch(() => setResults([]));
-    }, DEBOUNCE_MS);
+    const timeoutId = setTimeout(
+      () => {
+        api
+          .get(`/api/users?q=${encodeURIComponent(trimmed)}`)
+          .then((data) => {
+            if (!cancelled) setResults(data.users);
+          })
+          .catch(() => {
+            if (!cancelled) setResults([]);
+          });
+      },
+      trimmed ? DEBOUNCE_MS : 0,
+    );
 
-    return () => clearTimeout(timeoutId);
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
   }, [query]);
 
   function toggleMember(user) {
