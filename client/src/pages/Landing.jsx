@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../features/auth/AuthProvider.jsx";
 
 // Single place to rename the product: every mention below reads this.
-const BRAND = "Relai";
+const BRAND = "ChatMess";
 const REPO_URL = "https://github.com/buhovac/chat-mess";
 
 // Only features that are actually shipped — nothing aspirational here.
