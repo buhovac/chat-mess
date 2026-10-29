@@ -327,6 +327,13 @@ body {
   z-index: 10;
 }
 
+/* Search dialogs: anchored at the top instead of centred, so the search
+   field stays put while the result list grows or shrinks below it. */
+.dialog-backdrop--top {
+  align-items: flex-start;
+  padding-top: 10vh;
+}
+
 .dialog {
   background: white;
   color: #111827;
@@ -388,6 +395,13 @@ body {
   color: #111827;
 }
 
+/* Search dialogs: "Annuler" bottom-left. margin-right: auto also pushes a
+   sibling action ("Créer le groupe") to the right in a .dialog-actions row. */
+.dialog-close-button--left {
+  align-self: flex-start;
+  margin-right: auto;
+}
+
 .dialog-actions {
   display: flex;
   justify-content: flex-end;
@@ -421,7 +435,10 @@ body {
   font-size: 0.85rem;
 }
 
+/* margin: 0 cancels the margin-top from ".app-sidebar button" (the dialog
+   renders inside the sidebar), which pushed the × to the chip's bottom. */
 .selected-member-chip button {
+  margin: 0;
   border: none;
   background: none;
   color: inherit;

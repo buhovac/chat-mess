@@ -1,35 +1,24 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../lib/api.js";
+import { useUserSearch } from "./useUserSearch.js";
 
-const DEBOUNCE_MS = 300;
 const MIN_OTHER_MEMBERS = 2;
 
 export function NewGroupDialog({ onClose, onConversationReady }) {
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState([]);
+  const { results, settled } = useUserSearch(query);
   const [selected, setSelected] = useState([]);
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  // Field hints only appear after a click on "Créer le groupe", not while
+  // the user is still filling the form in.
+  const [attempted, setAttempted] = useState(false);
 
-  useEffect(() => {
-    const trimmed = query.trim();
-    if (!trimmed) {
-      setResults([]);
-      return;
-    }
-
-    const timeoutId = setTimeout(() => {
-      api
-        .get(`/api/users?q=${encodeURIComponent(trimmed)}`)
-        .then((data) => setResults(data.users))
-        .catch(() => setResults([]));
-    }, DEBOUNCE_MS);
-
-    return () => clearTimeout(timeoutId);
-  }, [query]);
+  const nameTooShort = name.trim().length < 2;
+  const tooFewMembers = selected.length < MIN_OTHER_MEMBERS;
 
   function toggleMember(user) {
     setSelected((prev) =>
@@ -39,6 +28,12 @@ export function NewGroupDialog({ onClose, onConversationReady }) {
 
   async function handleSubmit(e) {
     e.preventDefault();
+    // Checked on click instead of disabling the button: a disabled button
+    // can't tell the user what is missing. The server validates it again.
+    if (nameTooShort || tooFewMembers) {
+      setAttempted(true);
+      return;
+    }
     setError(null);
     setSubmitting(true);
     try {
@@ -56,10 +51,8 @@ export function NewGroupDialog({ onClose, onConversationReady }) {
     }
   }
 
-  const canSubmit = name.trim().length >= 2 && selected.length >= MIN_OTHER_MEMBERS && !submitting;
-
   return (
-    <div className="dialog-backdrop" onClick={onClose}>
+    <div className="dialog-backdrop dialog-backdrop--top" onClick={onClose}>
       <form className="dialog" onClick={(e) => e.stopPropagation()} onSubmit={handleSubmit}>
         <h3>Nouveau groupe</h3>
         {error && <p className="auth-error">{error}</p>}
@@ -71,6 +64,7 @@ export function NewGroupDialog({ onClose, onConversationReady }) {
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
+        {attempted && nameTooShort && <p className="auth-error">Donne un nom au groupe (au moins 2 caractères).</p>}
 
         {selected.length > 0 && (
           <ul className="selected-members">
@@ -91,6 +85,7 @@ export function NewGroupDialog({ onClose, onConversationReady }) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
+        {attempted && tooFewMembers && <p className="auth-error">Sélectionne au moins 2 collègues.</p>}
         <ul className="user-search-results">
           {results.map((user) => (
             <li key={user.id}>
@@ -104,14 +99,14 @@ export function NewGroupDialog({ onClose, onConversationReady }) {
               </button>
             </li>
           ))}
-          {query.trim() && results.length === 0 && <li className="conversation-list-empty">Aucun résultat</li>}
+          {settled && results.length === 0 && <li className="conversation-list-empty">Aucun résultat</li>}
         </ul>
 
         <div className="dialog-actions">
-          <button type="button" className="dialog-close-button" onClick={onClose}>
+          <button type="button" className="dialog-close-button dialog-close-button--left" onClick={onClose}>
             Annuler
           </button>
-          <button type="submit" className="new-conversation-button" disabled={!canSubmit}>
+          <button type="submit" className="new-conversation-button" disabled={submitting}>
             Créer le groupe
           </button>
         </div>
