@@ -42,7 +42,7 @@ export function NewGroupDialog({ onClose, onConversationReady }) {
   const canSubmit = name.trim().length >= 2 && selected.length >= MIN_OTHER_MEMBERS && !submitting;
 
   return (
-    <div className="dialog-backdrop" onClick={onClose}>
+    <div className="dialog-backdrop dialog-backdrop--top" onClick={onClose}>
       <form className="dialog" onClick={(e) => e.stopPropagation()} onSubmit={handleSubmit}>
         <h3>Nouveau groupe</h3>
         {error && <p className="auth-error">{error}</p>}

@@ -25,7 +25,7 @@ export function NewConversationDialog({ onClose, onConversationReady }) {
   }
 
   return (
-    <div className="dialog-backdrop" onClick={onClose}>
+    <div className="dialog-backdrop dialog-backdrop--top" onClick={onClose}>
       <div className="dialog" onClick={(e) => e.stopPropagation()}>
         <h3>Nouvelle conversation</h3>
         {error && <p className="auth-error">{error}</p>}

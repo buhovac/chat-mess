@@ -327,6 +327,13 @@ body {
   z-index: 10;
 }
 
+/* Search dialogs: anchored at the top instead of centred, so the search
+   field stays put while the result list grows or shrinks below it. */
+.dialog-backdrop--top {
+  align-items: flex-start;
+  padding-top: 10vh;
+}
+
 .dialog {
   background: white;
   color: #111827;
