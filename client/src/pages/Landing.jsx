@@ -102,11 +102,10 @@ export default function Landing() {
             <div className="landing-hero-text">
               <p className="landing-eyebrow">Messagerie d'équipe B2B</p>
               <h1>
-                {BRAND} — la messagerie d'équipe qui dit vraiment <span className="landing-accent">qui peut quoi.</span>
+                {BRAND} — la messagerie qui <span className="landing-accent">simplifie la communication</span> en entreprise
               </h1>
               <p className="landing-subhead">
-                Conversations et groupes en temps réel, permissions appliquées jusqu'au bout — pas juste cachées dans
-                l'interface — et une sécurité qui invalide vraiment vos sessions quand vous changez de mot de passe.
+                Échangez en temps réel avec vos collègues, partagez vos images et vos PDF, le tout dans une seule app.
               </p>
               <div className="landing-cta-row">
                 {primaryCta}

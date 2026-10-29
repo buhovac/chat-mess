@@ -332,7 +332,7 @@
    than "template". clamp() scales it smoothly from 360px to desktop. */
 .landing-hero h1 {
   margin: 0;
-  font-size: clamp(2.35rem, 1.3rem + 4.6vw, 4.5rem);
+  font-size: clamp(1.9rem, 1.05rem + 3.7vw, 3.6rem);
   font-weight: 800;
   line-height: 1.04;
   letter-spacing: -0.035em;
