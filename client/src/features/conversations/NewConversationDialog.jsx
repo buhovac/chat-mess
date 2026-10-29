@@ -1,45 +1,14 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../lib/api.js";
-
-const DEBOUNCE_MS = 300;
+import { useUserSearch } from "./useUserSearch.js";
 
 export function NewConversationDialog({ onClose, onConversationReady }) {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState([]);
+  const { results, settled } = useUserSearch(query);
   const [error, setError] = useState(null);
   const [startingWith, setStartingWith] = useState(null);
-
-  // Query vide : la liste des collègues s'affiche dès l'ouverture. Query
-  // tapée : recherche côté serveur (avec debounce), car le serveur ne renvoie
-  // que 20 utilisateurs par réponse — filtrer ce lot en mémoire raterait les
-  // autres. Même logique que NewGroupDialog.
-  useEffect(() => {
-    const trimmed = query.trim();
-    // Une réponse plus lente d'une recherche précédente ne doit pas écraser
-    // les résultats de la recherche en cours.
-    let cancelled = false;
-
-    const timeoutId = setTimeout(
-      () => {
-        api
-          .get(`/api/users?q=${encodeURIComponent(trimmed)}`)
-          .then((data) => {
-            if (!cancelled) setResults(data.users);
-          })
-          .catch(() => {
-            if (!cancelled) setResults([]);
-          });
-      },
-      trimmed ? DEBOUNCE_MS : 0,
-    );
-
-    return () => {
-      cancelled = true;
-      clearTimeout(timeoutId);
-    };
-  }, [query]);
 
   async function handlePick(user) {
     setError(null);
@@ -76,7 +45,7 @@ export function NewConversationDialog({ onClose, onConversationReady }) {
               </button>
             </li>
           ))}
-          {results.length === 0 && <li className="conversation-list-empty">Aucun résultat</li>}
+          {settled && results.length === 0 && <li className="conversation-list-empty">Aucun résultat</li>}
         </ul>
         <button className="dialog-close-button" onClick={onClose}>
           Annuler

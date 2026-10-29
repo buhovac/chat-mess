@@ -1,46 +1,18 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../lib/api.js";
+import { useUserSearch } from "./useUserSearch.js";
 
-const DEBOUNCE_MS = 300;
 const MIN_OTHER_MEMBERS = 2;
 
 export function NewGroupDialog({ onClose, onConversationReady }) {
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState([]);
+  const { results, settled } = useUserSearch(query);
   const [selected, setSelected] = useState([]);
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-
-  // Empty query: list colleagues right away, like "Nouvelle conversation".
-  // Typed query: still searched server-side (debounced), because the server
-  // caps each answer at 20 users and in-memory filtering would miss the rest.
-  useEffect(() => {
-    const trimmed = query.trim();
-    // A slower earlier request must not overwrite the results of the current query.
-    let cancelled = false;
-
-    const timeoutId = setTimeout(
-      () => {
-        api
-          .get(`/api/users?q=${encodeURIComponent(trimmed)}`)
-          .then((data) => {
-            if (!cancelled) setResults(data.users);
-          })
-          .catch(() => {
-            if (!cancelled) setResults([]);
-          });
-      },
-      trimmed ? DEBOUNCE_MS : 0,
-    );
-
-    return () => {
-      cancelled = true;
-      clearTimeout(timeoutId);
-    };
-  }, [query]);
 
   function toggleMember(user) {
     setSelected((prev) =>
@@ -115,7 +87,7 @@ export function NewGroupDialog({ onClose, onConversationReady }) {
               </button>
             </li>
           ))}
-          {query.trim() && results.length === 0 && <li className="conversation-list-empty">Aucun résultat</li>}
+          {settled && results.length === 0 && <li className="conversation-list-empty">Aucun résultat</li>}
         </ul>
 
         <div className="dialog-actions">
