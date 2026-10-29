@@ -492,17 +492,21 @@ body {
 }
 
 /* Secondary buttons (outline, not filled blue) with the same shape as the
-   rest of the app; a bit less padding than 10px 16px to keep the header slim. */
-.conversation-header-actions button {
+   rest of the app; a bit less padding than 10px 16px to keep the header slim.
+   The member panel's "Fermer" sits on the same page, so it shares the look. */
+.conversation-header-actions button,
+.member-panel-header button {
   padding: var(--space-2) var(--space-3);
   font-size: 0.9rem;
+  color: #111827;
   border: 1px solid #d1d5db;
   border-radius: var(--radius);
   background: white;
   cursor: pointer;
 }
 
-.conversation-header-actions button:not(.danger-button):hover {
+.conversation-header-actions button:not(.danger-button):hover,
+.member-panel-header button:hover {
   background: #f3f4f6;
 }
 
@@ -510,7 +514,8 @@ body {
   background: #fee2e2;
 }
 
-.conversation-header-actions button:focus-visible {
+.conversation-header-actions button:focus-visible,
+.member-panel-header button:focus-visible {
   outline: 2px solid #93c5fd;
   outline-offset: 2px;
 }
