@@ -435,7 +435,10 @@ body {
   font-size: 0.85rem;
 }
 
+/* margin: 0 cancels the margin-top from ".app-sidebar button" (the dialog
+   renders inside the sidebar), which pushed the × to the chip's bottom. */
 .selected-member-chip button {
+  margin: 0;
   border: none;
   background: none;
   color: inherit;
