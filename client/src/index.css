@@ -724,6 +724,46 @@ button.danger-button {
   color: #9ca3af;
 }
 
+/* Attachments (E-attach). Fixed max-height so a tall image can't push the
+   whole conversation off screen. */
+.attachment-image-link {
+  display: block;
+  margin: 0.25rem 0;
+}
+
+.attachment-image {
+  display: block;
+  max-width: 100%;
+  max-height: 300px;
+  border-radius: 6px;
+}
+
+.attachment-file {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  max-width: 100%;
+  margin: 0.25rem 0;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #f9fafb;
+  color: #1d4ed8;
+  text-decoration: none;
+}
+
+.attachment-file-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachment-file-size {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  color: #4b5563;
+}
+
 .message-bubble--pending {
   opacity: 0.6;
 }
@@ -756,6 +796,30 @@ button.danger-button {
   background: #2563eb;
   color: white;
   cursor: pointer;
+}
+
+.composer-attach-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: white;
+  color: #374151;
+  cursor: pointer;
+}
+
+.composer-attach-button:disabled {
+  color: #9ca3af;
+  cursor: default;
+}
+
+.composer-uploading {
+  align-self: center;
+  font-size: 0.85rem;
+  color: #4b5563;
 }
 
 .composer-send-button:disabled {
@@ -912,7 +976,10 @@ button.danger-button {
 }
 
 .landing a:focus-visible,
-.app-back-link:focus-visible {
+.app-back-link:focus-visible,
+.attachment-image-link:focus-visible,
+.attachment-file:focus-visible,
+.composer-attach-button:focus-visible {
   outline: 3px solid #1d4ed8;
   outline-offset: 2px;
 }

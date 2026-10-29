@@ -25,7 +25,14 @@ export async function listMessages(conversationId, { before, limit = 50 } = {}) 
 
   // Fetched newest-first so the cursor lands on the right page; the API
   // contract is oldest-first (so the client can just append to the top).
-  return messages.reverse().map((message) => ({
+  return messages.reverse().map(toMessageDto);
+}
+
+// The one place a Message row becomes API output, so REST history, socket
+// events and attachment uploads can't drift apart. The stored R2 key is
+// never exposed: clients get a same-origin URL that re-checks membership.
+export function toMessageDto(message) {
+  return {
     id: message.id,
     content: message.content,
     createdAt: message.createdAt,
@@ -33,22 +40,42 @@ export async function listMessages(conversationId, { before, limit = 50 } = {}) 
     sender: message.sender
       ? { id: message.sender.id, displayName: message.sender.displayName, plan: message.sender.plan }
       : null,
-  }));
+    attachmentUrl: message.attachmentUrl ? `/api/attachments/${message.id}` : null,
+    attachmentType: message.attachmentType,
+    attachmentName: message.attachmentName,
+    attachmentSize: message.attachmentSize,
+  };
 }
 
-// Shared by the Socket.IO "message:send" handler (and any future REST POST)
-// so the create path only exists once.
-export async function createMessage(conversationId, senderId, content) {
+// Shared by the Socket.IO "message:send" handler and the attachment upload
+// route so the create path only exists once. attachment is
+// { key, type, name, size } when present.
+export async function createMessage(conversationId, senderId, content, attachment = null) {
   const message = await prisma.message.create({
-    data: { conversationId, senderId, content },
+    data: {
+      conversationId,
+      senderId,
+      content,
+      ...(attachment
+        ? {
+            attachmentUrl: attachment.key,
+            attachmentType: attachment.type,
+            attachmentName: attachment.name,
+            attachmentSize: attachment.size,
+          }
+        : {}),
+    },
     include: { sender: { select: { id: true, displayName: true, plan: true } } },
   });
 
-  return {
-    id: message.id,
-    content: message.content,
-    createdAt: message.createdAt,
-    kind: message.kind,
-    sender: { id: message.sender.id, displayName: message.sender.displayName, plan: message.sender.plan },
-  };
+  return toMessageDto(message);
+}
+
+// For GET /api/attachments/:messageId: just what the route needs to check
+// membership and stream the file.
+export function findAttachment(messageId) {
+  return prisma.message.findFirst({
+    where: { id: messageId, attachmentUrl: { not: null } },
+    select: { conversationId: true, attachmentUrl: true, attachmentType: true, attachmentName: true },
+  });
 }

@@ -148,7 +148,13 @@ export async function listConversationsForUser(userId) {
       return {
         ...toConversationDTO(conversation, userId),
         lastMessage: lastMessage
-          ? { content: lastMessage.content, createdAt: lastMessage.createdAt, senderId: lastMessage.senderId }
+          ? {
+              // An attachment-only message has empty content; show its
+              // filename so the sidebar preview isn't a blank line.
+              content: lastMessage.content || (lastMessage.attachmentName ? `📎 ${lastMessage.attachmentName}` : ""),
+              createdAt: lastMessage.createdAt,
+              senderId: lastMessage.senderId,
+            }
           : null,
         unreadCount: unreadCounts.get(conversation.id) ?? 0,
         activityAt: lastMessage ? lastMessage.createdAt : conversation.createdAt,
