@@ -142,8 +142,7 @@
 }
 
 /* min-height 44px: comfortable tap target. */
-.landing-nav-anchor,
-.landing-nav-link {
+.landing-nav-anchor {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
@@ -155,9 +154,36 @@
   transition: color 0.15s ease;
 }
 
-.landing-nav-anchor:hover,
-.landing-nav-link:hover {
+.landing-nav-anchor:hover {
   color: var(--lp-on-dark);
+}
+
+/* "Se connecter": outlined twin of .landing-cta--small, so the two account
+   actions read as a pair and stand apart from the section anchors. Neutral
+   border so the coral "Essayer" stays the one primary action. */
+.landing-nav-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 1rem;
+  border: 1.5px solid var(--lp-on-dark-muted);
+  border-radius: 10px;
+  color: var(--lp-on-dark-muted);
+  font-weight: 700;
+  font-size: 0.95rem;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.18s ease;
+}
+
+.landing-nav-link:hover {
+  border-color: var(--lp-on-dark);
+  color: var(--lp-on-dark);
+  transform: translateY(-2px);
 }
 
 /* Section anchors only from tablet up: on a phone the bar would be
@@ -848,6 +874,7 @@
   }
 
   .landing-cta:hover,
+  .landing-nav-link:hover,
   .landing-card:hover {
     transform: none;
   }
@@ -877,7 +904,8 @@
     gap: 0.6rem;
   }
 
-  .landing-cta--small {
+  .landing-cta--small,
+  .landing-nav-link {
     padding: 0 0.75rem;
   }
 }
