@@ -174,7 +174,6 @@ export default function Landing() {
         <section className="landing-final" aria-labelledby="landing-final-title">
           <div className="landing-container landing-final-inner reveal">
             <h2 id="landing-final-title">Votre équipe, enfin dans la même conversation.</h2>
-            <p>Créez un compte, ouvrez un groupe, invitez vos collègues — c'est tout.</p>
             {primaryCta}
           </div>
         </section>

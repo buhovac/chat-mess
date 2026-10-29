@@ -772,14 +772,7 @@
 }
 
 .landing-final h2 {
-  margin: 0 auto 1rem;
-}
-
-.landing-final p {
-  margin: 0 0 2.25rem;
-  max-width: 48ch;
-  font-size: 1.1rem;
-  color: var(--lp-on-dark-muted);
+  margin: 0 auto 2.25rem;
 }
 
 .landing-footer {
