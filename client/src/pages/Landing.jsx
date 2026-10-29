@@ -15,22 +15,22 @@ const REPO_URL = "https://github.com/buhovac/chat-mess";
 // `accent` picks the card's icon circle + hover glow color (Landing.css).
 const BENEFITS = [
   {
-    title: "Temps réel, sans rafraîchir",
-    text: "Messages, présence et indicateur de frappe arrivent instantanément via WebSocket.",
+    title: "Instantané et sécurisé",
+    text: "Vos messages s'échangent instantanément, et votre session est protégée contre les intrusions.",
     accent: "coral",
     icon: IconBolt,
   },
   {
-    title: "Des permissions qui tiennent",
-    text: "Propriétaire, admin, membre : chaque action est vérifiée côté serveur, pas seulement cachée dans un bouton.",
+    title: "Avec un collègue ou en équipe",
+    text: "Une conversation privée, ou un groupe pour tout un projet, avec des rôles bien définis.",
     accent: "purple",
-    icon: IconShield,
+    icon: IconUsers,
   },
   {
-    title: "La sécurité prise au sérieux",
-    text: "Cookies httpOnly, et un changement de mot de passe invalide immédiatement toutes les autres sessions ouvertes.",
+    title: "Images et PDF partagés",
+    text: "Envoyez une photo, une capture ou un PDF directement dans la conversation.",
     accent: "teal",
-    icon: IconLock,
+    icon: IconPaperclip,
   },
 ];
 
@@ -220,20 +220,22 @@ function IconBolt() {
   );
 }
 
-function IconShield() {
+function IconUsers() {
   return (
     <svg viewBox="0 0 24 24">
-      <path d="M12 3 4 6v6c0 5 3.4 8.4 8 9 4.6-.6 8-4 8-9V6l-8-3z" />
-      <path d="m9 12 2 2 4-4" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
     </svg>
   );
 }
 
-function IconLock() {
+// Same shape as the composer's attach button, so visitors recognise it in the app.
+function IconPaperclip() {
   return (
     <svg viewBox="0 0 24 24">
-      <rect x="5" y="11" width="14" height="10" rx="2" />
-      <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+      <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
     </svg>
   );
 }
