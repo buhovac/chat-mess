@@ -788,9 +788,15 @@ button.danger-button {
   border-radius: 6px;
 }
 
+/* Same square footprint as the attach button; the blue fill keeps it
+   the primary action. */
 .composer-send-button {
-  padding: 0.6rem 1rem;
-  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  padding: 0;
   border: none;
   border-radius: 6px;
   background: #2563eb;

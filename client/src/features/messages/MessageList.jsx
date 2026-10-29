@@ -264,8 +264,16 @@ export function MessageList({ conversationId, conversation }) {
             onChange={handleDraftChange}
             onKeyDown={handleKeyDown}
           />
-          <button className="composer-send-button" onClick={handleSend} disabled={!draft.trim() || isOffline}>
-            Envoyer
+          {/* Icon only, to leave the textarea more room; aria-label gives it
+              back a name for screen readers, title a tooltip on hover. */}
+          <button
+            className="composer-send-button"
+            onClick={handleSend}
+            disabled={!draft.trim() || isOffline}
+            aria-label="Envoyer"
+            title="Envoyer"
+          >
+            <SendIcon />
           </button>
         </div>
       )}
@@ -318,6 +326,14 @@ function PaperclipIcon() {
         strokeLinejoin="round"
         d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"
       />
+    </svg>
+  );
+}
+
+function SendIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
     </svg>
   );
 }
