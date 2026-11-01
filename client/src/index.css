@@ -480,6 +480,40 @@ body {
   text-decoration: underline;
 }
 
+.conversation-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+/* Same outline look as the header action buttons, square to fit the icon. */
+.rename-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  font-size: 1rem;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+  border-radius: var(--radius);
+  background: white;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.rename-button:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.rename-button:focus-visible {
+  outline: 2px solid #93c5fd;
+  outline-offset: 2px;
+}
+
 .rename-form {
   display: flex;
   gap: 0.5rem;
@@ -728,6 +762,29 @@ button.danger-button {
   gap: 0.5rem;
   flex: 1;
   overflow-y: auto;
+}
+
+.load-older {
+  align-self: center;
+}
+
+.load-older-button {
+  font-size: 0.8rem;
+  color: #6b7280;
+  background: transparent;
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+  cursor: pointer;
+}
+
+.load-older-button:hover:not(:disabled) {
+  background: #f3f4f6;
+}
+
+.load-older-button:disabled {
+  cursor: default;
+  opacity: 0.6;
 }
 
 .message-bubble {
@@ -1091,6 +1148,12 @@ button.danger-button {
   .conversation-header-actions button,
   .composer-send-button {
     min-height: 40px;
+  }
+
+  /* No hover on touch screens: big enough to hit with a finger. */
+  .rename-button {
+    width: 40px;
+    height: 40px;
   }
 
   .message-bubble {

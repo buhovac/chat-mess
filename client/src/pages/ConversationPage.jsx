@@ -158,6 +158,11 @@ export default function ConversationPage() {
   const needsTransfer = isGroup && myRole === "OWNER" && conversation.memberCount > 1;
   const otherMembers = conversation.members.filter((m) => m.id !== user.id);
 
+  function startRenaming() {
+    setNameDraft(conversation.name ?? "");
+    setRenaming(true);
+  }
+
   return (
     <section className="conversation-view">
       <header className="conversation-header">
@@ -170,17 +175,28 @@ export default function ConversationPage() {
             </button>
           </form>
         ) : (
-          <h2
-            className={canEditName ? "conversation-title--editable" : undefined}
-            onClick={() => {
-              if (!canEditName) return;
-              setNameDraft(conversation.name ?? "");
-              setRenaming(true);
-            }}
-          >
-            {/* null only for a DIRECT whose other member deleted their account */}
-            {conversation.name ?? "Utilisateur supprimé"}
-          </h2>
+          <div className="conversation-title">
+            <h2
+              className={canEditName ? "conversation-title--editable" : undefined}
+              onClick={canEditName ? startRenaming : undefined}
+            >
+              {/* null only for a DIRECT whose other member deleted their account */}
+              {conversation.name ?? "Utilisateur supprimé"}
+            </h2>
+            {/* Clicking the title alone gave no visible hint (hover-only, so
+                nothing at all on touch screens): the pencil makes it explicit. */}
+            {canEditName && (
+              <button
+                type="button"
+                className="rename-button"
+                onClick={startRenaming}
+                aria-label="Renommer le groupe"
+                title="Renommer le groupe"
+              >
+                <span aria-hidden="true">✎</span>
+              </button>
+            )}
+          </div>
         )}
 
         {isGroup && (

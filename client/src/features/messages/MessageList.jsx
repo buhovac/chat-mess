@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { api } from "../../lib/api.js";
 import { socket } from "../../lib/socket.js";
 import { relativeTime } from "../../lib/relativeTime.js";
@@ -21,6 +21,19 @@ function upsertMessage(messages, incoming) {
   const next = [...messages];
   next[index] = incoming;
   return next;
+}
+
+// Must match the server's default page size (listMessagesQuerySchema): a
+// full page means older messages may remain. If the history is an exact
+// multiple of 50, the last click just returns an empty page and the
+// button goes away.
+const PAGE_SIZE = 50;
+
+// Older page goes on top. Skips ids already in the list so a message can't
+// show twice if it was also delivered some other way.
+function prependPage(messages, olderPage) {
+  const knownIds = new Set(messages.map((m) => m.id));
+  return [...olderPage.filter((m) => !knownIds.has(m.id)), ...messages];
 }
 
 const TYPING_STOP_DELAY_MS = 3000;
@@ -46,28 +59,74 @@ export function MessageList({ conversationId, conversation }) {
   const [draft, setDraft] = useState("");
   const [typingUserIds, setTypingUserIds] = useState(() => new Set());
   const [uploading, setUploading] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
   const fileInputRef = useRef(null);
   const listRef = useRef(null);
   const isTypingRef = useRef(false);
   const typingTimeoutRef = useRef(null);
+  // Distance from the bottom saved just before prepending older messages,
+  // so the scroll effect can keep the same message in view.
+  const scrollRestoreRef = useRef(null);
+  // Lets an in-flight "load older" request notice the user switched
+  // conversations and drop its response.
+  const conversationIdRef = useRef(conversationId);
+  conversationIdRef.current = conversationId;
 
   useEffect(() => {
     setLoading(true);
+    setHasMore(false);
     api
       .get(`/api/conversations/${conversationId}/messages`)
-      .then((data) => setMessages(data.messages))
+      .then((data) => {
+        setMessages(data.messages);
+        setHasMore(data.messages.length === PAGE_SIZE);
+      })
       .catch(() => setMessages([]))
       .finally(() => setLoading(false));
   }, [conversationId]);
 
   // The list scrolls inside a fixed-height shell, so the newest message
   // would otherwise land below the fold: jump to the bottom on first load
-  // and whenever a message is added.
-  useEffect(() => {
-    if (listRef.current) {
-      listRef.current.scrollTop = listRef.current.scrollHeight;
+  // and whenever a message is added. Older messages added on top are the
+  // exception: there we keep the reader where they were. Layout effect so
+  // the position is fixed before paint, without a visible jump.
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+    if (scrollRestoreRef.current !== null) {
+      list.scrollTop = list.scrollHeight - scrollRestoreRef.current;
+      scrollRestoreRef.current = null;
+    } else {
+      list.scrollTop = list.scrollHeight;
     }
   }, [messages.length, loading]);
+
+  async function handleLoadOlder() {
+    const requestedFor = conversationId;
+    setLoadingOlder(true);
+    try {
+      // Messages are oldest-first, so messages[0] is the cursor. It's always
+      // a server id here: the button only shows after a full server page.
+      const data = await api.get(`/api/conversations/${conversationId}/messages?before=${messages[0].id}`);
+      if (conversationIdRef.current !== requestedFor) return;
+      // Only when something is added: an empty page doesn't change
+      // messages.length, so the effect wouldn't consume the saved value and
+      // the next incoming message would wrongly restore it.
+      if (data.messages.length > 0) {
+        const list = listRef.current;
+        scrollRestoreRef.current = list.scrollHeight - list.scrollTop;
+      }
+      setMessages((prev) => prependPage(prev, data.messages));
+      setHasMore(data.messages.length === PAGE_SIZE);
+    } catch {
+      if (conversationIdRef.current === requestedFor) {
+        showToast("Impossible de charger les messages précédents.");
+      }
+    } finally {
+      setLoadingOlder(false);
+    }
+  }
 
   useEffect(() => {
     function handleNewMessage({ conversationId: incomingConversationId, message, clientTempId }) {
@@ -201,6 +260,13 @@ export function MessageList({ conversationId, conversation }) {
 
       {!loading && messages.length > 0 && (
         <ul className="message-list" ref={listRef}>
+          {hasMore && (
+            <li className="load-older">
+              <button type="button" className="load-older-button" onClick={handleLoadOlder} disabled={loadingOlder}>
+                {loadingOlder ? "Chargement..." : "Charger les messages précédents"}
+              </button>
+            </li>
+          )}
           {messages.map((message) =>
             message.kind === "SYSTEM" ? (
               <li key={message.id} className="system-message">

@@ -4,7 +4,8 @@ import { api } from "../../lib/api.js";
 const DEBOUNCE_MS = 300;
 
 // Colleague search shared by the "Nouvelle conversation" and "Nouveau groupe"
-// dialogs. Two sources, so typing feels instant yet nobody is unreachable:
+// dialogs and the member panel's "Ajouter un membre". Two sources, so typing
+// feels instant yet nobody is unreachable:
 // - instantly, the first page loaded on open (q="") is filtered in memory;
 // - after a pause in typing, the server searches every user (it caps each
 //   answer at 20, so filtering the first page alone would miss the rest),

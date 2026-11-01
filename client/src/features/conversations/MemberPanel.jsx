@@ -6,43 +6,29 @@ import { PlanBadge } from "../../components/PlanBadge.jsx";
 import { Avatar } from "../../components/Avatar.jsx";
 import { usePresence } from "../presence/PresenceProvider.jsx";
 import * as permissions from "./permissions.js";
+import { useUserSearch } from "./useUserSearch.js";
 
-const DEBOUNCE_MS = 300;
 const ROLE_LABELS = { OWNER: "Propriétaire", ADMIN: "Administrateur", MEMBER: "Membre" };
 
 export function MemberPanel({ conversation, onClose, onChanged }) {
   const { user } = useAuth();
   const { presence, ensurePresence } = usePresence();
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState([]);
+  const { results, settled } = useUserSearch(query);
   const [busyUserId, setBusyUserId] = useState(null);
   const [error, setError] = useState(null);
   const [pendingRemoval, setPendingRemoval] = useState(null);
 
   const myRole = conversation.myRole;
   const memberIds = new Set(conversation.members.map((m) => m.id));
+  // Filtered here rather than in the hook: only this panel needs it. Done
+  // at render time, so a member added a moment ago drops out as soon as
+  // the conversation reloads.
+  const candidates = results.filter((u) => !memberIds.has(u.id));
 
   useEffect(() => {
     ensurePresence(conversation.members.map((m) => m.id));
   }, [conversation, ensurePresence]);
-
-  useEffect(() => {
-    const trimmed = query.trim();
-    if (!trimmed) {
-      setResults([]);
-      return;
-    }
-
-    const timeoutId = setTimeout(() => {
-      api
-        .get(`/api/users?q=${encodeURIComponent(trimmed)}`)
-        .then((data) => setResults(data.users.filter((u) => !memberIds.has(u.id))))
-        .catch(() => setResults([]));
-    }, DEBOUNCE_MS);
-
-    return () => clearTimeout(timeoutId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- memberIds is derived fresh every render from `conversation`, re-running on it alone is enough
-  }, [query, conversation]);
 
   async function runAction(userId, action) {
     setBusyUserId(userId);
@@ -61,7 +47,6 @@ export function MemberPanel({ conversation, onClose, onChanged }) {
     return runAction(targetUser.id, async () => {
       await api.post(`/api/conversations/${conversation.id}/members`, { userId: targetUser.id });
       setQuery("");
-      setResults([]);
     });
   }
 
@@ -130,7 +115,7 @@ export function MemberPanel({ conversation, onClose, onChanged }) {
             onChange={(e) => setQuery(e.target.value)}
           />
           <ul className="user-search-results">
-            {results.map((candidate) => (
+            {candidates.map((candidate) => (
               <li key={candidate.id}>
                 <button disabled={busyUserId === candidate.id} onClick={() => handleAdd(candidate)}>
                   <span className="user-search-name">{candidate.displayName}</span>
@@ -138,7 +123,14 @@ export function MemberPanel({ conversation, onClose, onChanged }) {
                 </button>
               </li>
             ))}
-            {query.trim() && results.length === 0 && <li className="conversation-list-empty">Aucun résultat</li>}
+            {/* With no query the server only sends the first 20 colleagues: if
+                they're all members already, others may still exist, so
+                "Aucun résultat" would be wrong. */}
+            {settled && candidates.length === 0 && (
+              <li className="conversation-list-empty">
+                {query.trim() ? "Aucun résultat" : "Tape un nom pour chercher d'autres collègues."}
+              </li>
+            )}
           </ul>
         </div>
       )}
