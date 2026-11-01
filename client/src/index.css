@@ -730,6 +730,29 @@ button.danger-button {
   overflow-y: auto;
 }
 
+.load-older {
+  align-self: center;
+}
+
+.load-older-button {
+  font-size: 0.8rem;
+  color: #6b7280;
+  background: transparent;
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+  cursor: pointer;
+}
+
+.load-older-button:hover:not(:disabled) {
+  background: #f3f4f6;
+}
+
+.load-older-button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
 .message-bubble {
   max-width: 60%;
   padding: 0.5rem 0.75rem;
